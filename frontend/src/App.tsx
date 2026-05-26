@@ -1,6 +1,8 @@
 import StoryInspirationWrapper from "./components/StoryInspirationWrapper";
 import { JSX } from "react";
 import WritingAssistantComponent from "./components/writing-assistant/writing_assistant.component";
+import CollabHome from "./components/collab/CollabHome";
+import CollabRoom from "./components/collab/CollabRoom";
 import {
   BrowserRouter as Router,
   Routes,
@@ -450,6 +452,8 @@ function App() {
             </RootLayout>
           }
         />
+        <Route path="/collab" element={<CollabHome />} />
+        <Route path="/collab/:roomId" element={<CollabRoom />} />
         <Route
           path="*"
           element={
