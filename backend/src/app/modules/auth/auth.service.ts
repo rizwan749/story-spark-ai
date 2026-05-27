@@ -5,6 +5,7 @@ import { OAuth2Client } from "google-auth-library";
 import { AuthModel } from "./auth.interface";
 import { User } from "../user/user.model";
 import { JwtHalers } from "../../../utils/jwt.helper";
+import logger from "../../../utils/logger.util";
 import config from "../../../config";
 import ApiError from "../../../errors/api_error";
 import { IUser } from "../user/user.interface";
@@ -194,7 +195,8 @@ const googleLogin = async (payload: { token: string }) => {
       refreshToken: refreshTokenData,
     };
   } catch (error: any) {
-    console.log("Google login error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error(`Google login error: ${errorMessage}`);
     
     // If it's already an ApiError, re-throw it
     if (error instanceof ApiError) {

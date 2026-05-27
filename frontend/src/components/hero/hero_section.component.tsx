@@ -1,15 +1,18 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
+// Register the GSAP plugin
+gsap.registerPlugin(useGSAP);
 
 const features = [
   {
     title: "Infinite Variations",
     description: "Generate multiple unique branches of your story from a single starting prompt. Explore every creative possibility.",
-    shadowClass: "hover:shadow-blue-500/10",
-    bgClass: "bg-blue-500/20",
-    hoverBgClass: "group-hover:bg-blue-500/30",
+    bgClass: "bg-gradient-to-br from-blue-900 to-sky-600/70 dark:from-blue-950 dark:to-sky-800/90",
     icon: (
-      <svg className="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-7 h-7 text-sky-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
       </svg>
     )
@@ -17,11 +20,9 @@ const features = [
   {
     title: "AI Co-Writer",
     description: "Stuck on a paragraph? Let our advanced AI models suggest the next perfect sentence to keep your momentum going.",
-    shadowClass: "hover:shadow-indigo-500/10",
-    bgClass: "bg-indigo-500/20",
-    hoverBgClass: "group-hover:bg-indigo-500/30",
+    bgClass: "bg-gradient-to-br from-indigo-900 to-purple-600/70 dark:from-indigo-950 dark:to-purple-800/90",
     icon: (
-      <svg className="w-7 h-7 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-7 h-7 text-purple-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
       </svg>
     )
@@ -29,16 +30,90 @@ const features = [
   {
     title: "Community Driven",
     description: "Publish your stories, gather likes, and interact with other creators in a thriving, collaborative ecosystem.",
-    shadowClass: "hover:shadow-purple-500/10",
-    bgClass: "bg-purple-500/20",
-    hoverBgClass: "group-hover:bg-purple-500/30",
+    bgClass: "bg-gradient-to-br from-fuchsia-900 to-pink-600/70 dark:from-fuchsia-950 dark:to-pink-800/90",
     icon: (
-      <svg className="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-7 h-7 text-pink-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
     )
   }
 ];
+
+const FeatureCard = ({ feature }: { feature: any }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+
+      // Parallax effect on inner content
+      gsap.to(contentRef.current, {
+        x: x * 0.15,
+        y: y * 0.15,
+        ease: "power2.out",
+        duration: 0.3
+      });
+
+      // Slight 3D tilt on the card itself
+      gsap.to(card, {
+        rotateY: (x / rect.width) * 15,
+        rotateX: -(y / rect.height) * 15,
+        transformPerspective: 1000,
+        ease: "power2.out",
+        duration: 0.3
+      });
+    };
+
+    const handleMouseLeave = () => {
+      gsap.to(contentRef.current, {
+        x: 0,
+        y: 0,
+        ease: "power2.out",
+        duration: 0.7
+      });
+
+      gsap.to(card, {
+        rotateY: 0,
+        rotateX: 0,
+        ease: "power2.out",
+        duration: 0.7
+      });
+    };
+
+    card.addEventListener("mousemove", handleMouseMove);
+    card.addEventListener("mouseleave", handleMouseLeave);
+
+    return () => {
+      card.removeEventListener("mousemove", handleMouseMove);
+      card.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, { scope: cardRef });
+
+  return (
+    <div style={{ perspective: "1000px" }} className="h-full">
+      <div
+        ref={cardRef}
+        className={`motion-card relative overflow-hidden backdrop-blur-xl border border-white/10 rounded-3xl p-8 transition-shadow duration-500 shadow-xl group cursor-pointer ${feature.bgClass} hover:shadow-[0_0_40px_rgba(255,255,255,0.15)] h-full`}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+        <div ref={contentRef} className="relative z-10 pointer-events-none">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-white/10 shadow-lg group-hover:scale-110 transition-transform duration-300">
+            {feature.icon}
+          </div>
+          <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-100 transition-colors duration-300">{feature.title}</h3>
+          <p className="text-white/80 leading-relaxed group-hover:text-white transition-colors duration-300">{feature.description}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const HeroSectionComponent = () => {
   const [stars, setStars] = useState<Array<{ id: number; x: number; y: number; size: number }>>([]);
@@ -132,16 +207,7 @@ const HeroSectionComponent = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <div
-              key={index}
-              className={`motion-card ${feature.bgClass} backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-3xl p-8 hover:-translate-y-2 transition-all duration-300 shadow-xl hover:shadow-2xl ${feature.shadowClass} group cursor-pointer`}
-            >
-              <div className={`w-14 h-14 ${feature.bgClass} rounded-2xl flex items-center justify-center mb-6 ${feature.hoverBgClass} transition-colors duration-200`}>
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-3">{feature.title}</h3>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{feature.description}</p>
-            </div>
+            <FeatureCard feature={feature} key={index} />
           ))}
         </div>
       </div>

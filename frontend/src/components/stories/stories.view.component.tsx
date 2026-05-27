@@ -4,6 +4,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { useCreatePostMutation } from "../../redux/apis/post.api";
 import { useGetProfileInfoQuery } from "../../redux/apis/user.api";
 import jsPDF from "jspdf";
+import StoryWorldMap from "../story-map/StoryWorldMap";
 import BookmarkButton from "../BookmarkButton";
 import logo from "../../assets/logoNew.png";
 import StoryGeneratingAnimation from "../loading/story-generating-animation.component";
@@ -20,6 +21,7 @@ export interface IStories {
   content: string;
   tag: string;
   imageURL: string;
+  language?: string;
 }
 
 interface IPost extends IStories {
@@ -30,6 +32,7 @@ interface StoriesComponentProps {
   stories: IStories[];
   isLogin: boolean;
   setStories: (stories: IStories[]) => void;
+  onPublishSuccess?: () => void;
   isLoading?: boolean;
 }
 
@@ -78,6 +81,7 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   isLogin,
   setStories,
   isLoading,
+  onPublishSuccess,
 }) => {
   const location = useLocation();
   const audioPlayerRef = useRef<AudioPlayerHandle>(null);
@@ -89,6 +93,7 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   const [newTopicTitle, setNewTopicTitle] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [showWorldMap, setShowWorldMap] = useState<boolean>(false);
   const [createPost] = useCreatePostMutation();
   const { data: profile } = useGetProfileInfoQuery(undefined, { skip: !isLogin });
   // Alternate ending state & hooks
@@ -124,6 +129,9 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
         title: selectedStory.title,
         content: originalStoryContent[selectedStory.uuid] || selectedStory.content,
         tag: selectedStory.tag,
+
+        language: selectedStory.language || "English",
+
       };
       
       const generationRequest = isLogin
@@ -238,7 +246,6 @@ useEffect(() => {
       )
     );
   };
-
   const handleAddTopic = () => {
     const title = newTopicTitle.trim();
 
@@ -279,7 +286,6 @@ useEffect(() => {
       currentTopics.filter((_, topicIndex) => topicIndex !== index)
     );
   };
-
   const handleCopyStory = async () => {
     if (selectedStory?.content) {
       await navigator.clipboard.writeText(selectedStory.content);
@@ -563,7 +569,6 @@ ${content}
       toast.error("Failed to export Markdown.");
     }
   };
-
   const handelPublishStory = async () => {
     if (!isLogin) {
       toast.error("Please login to publish the story.");
@@ -588,6 +593,7 @@ ${content}
         toast.success("Story published successfully!");
         setStories([]);
         setSelectedStory(null);
+        onPublishSuccess?.();
       }
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -631,9 +637,17 @@ if (isLoading) {
         <div className="col-span-1 lg:col-span-8 flex flex-col">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <div>
-              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-blue-400">
+              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-blue-400 mb-2">
                 {selectedStory?.title}
               </h1>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full bg-purple-900/60 text-purple-300 border border-purple-700/50 py-1 px-3 text-xs font-semibold">
+                  🎭 {selectedStory.tag}
+                </span>
+                <span className="inline-flex items-center rounded-full bg-blue-900/60 text-blue-300 border border-blue-700/50 py-1 px-3 text-xs font-semibold">
+                  🌐 {selectedStory.language || "English"}
+                </span>
+              </div>
             </div>
             <div className="flex justify-start sm:justify-end">
               <div className="flex -space-x-5">
@@ -692,6 +706,14 @@ if (isLoading) {
                   disabled={!selectedStory}
                 >
                   ⬇️ Export Markdown
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg px-4 py-2 bg-violet-700 text-slate-200 font-semibold cursor-pointer hover:bg-violet-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowWorldMap(true)}
+                  disabled={!selectedStory}
+                >
+                  🗺️ World Map
                 </button>
                 <button
                   type="button"
@@ -970,6 +992,9 @@ if (isLoading) {
                     <div className="inline-flex items-center rounded-full bg-purple-600 py-1 px-3 text-xs font-semibold text-white shadow-sm">
                       {selectedStory.tag.toUpperCase()}
                     </div>
+                    <div className="inline-flex items-center rounded-full bg-indigo-600 py-1 px-3 text-xs font-semibold text-white shadow-sm">
+                      🌐 {(selectedStory.language || "English").toUpperCase()}
+                    </div>
                     <div className="inline-flex items-center rounded-full bg-slate-700 py-1 px-2.5 text-xs font-medium text-slate-300 shadow-sm gap-1">
                       ⏱️ {calculateReadingTime(selectedStory.content)} min read
                     </div>
@@ -989,6 +1014,13 @@ if (isLoading) {
           </div>
         </div>
       </div>
+      {showWorldMap && selectedStory && (
+        <StoryWorldMap
+          story={selectedStory.content}
+          title={selectedStory.title}
+          onClose={() => setShowWorldMap(false)}
+        />
+      )}
       <Toaster position="top-right" reverseOrder={false} />
     </div>
   );
