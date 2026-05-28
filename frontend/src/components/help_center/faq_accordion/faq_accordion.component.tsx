@@ -24,8 +24,10 @@ const FAQAccordion: FC<FAQAccordionProps> = ({ items }) => {
   if (items.length === 0) {
     return (
       <section id="faq" className="scroll-mt-24">
+
         <div className="text-center py-12 bg-gray-50 dark:bg-blue-500/5 rounded-xl border border-gray-200 dark:border-white/5">
           <p className="text-gray-600 dark:text-gray-400">No FAQ items match your search.</p>
+
         </div>
       </section>
     );
@@ -42,10 +44,12 @@ const FAQAccordion: FC<FAQAccordionProps> = ({ items }) => {
       aria-labelledby="faq-heading"
     >
       <div className="text-center mb-10">
+
         <h2 id="faq-heading" className="text-3xl font-extrabold text-gray-900 dark:text-gray-300">
           Frequently Asked Questions
         </h2>
         <p className="mt-3 text-gray-600 dark:text-gray-400 max-w-2xl mx-auto font-medium">
+
           Quick answers to the most common StorySparkAI questions.
         </p>
       </div>
@@ -60,7 +64,9 @@ const FAQAccordion: FC<FAQAccordionProps> = ({ items }) => {
             <article
               key={item.id}
               role="listitem"
+
               className="bg-white dark:bg-blue-500/10 border border-gray-200 dark:border-white/5 rounded-xl overflow-hidden shadow-sm dark:shadow-none transition-colors hover:border-indigo-400 dark:hover:border-indigo-500/20"
+
             >
               <h3>
                 <button
@@ -72,11 +78,13 @@ const FAQAccordion: FC<FAQAccordionProps> = ({ items }) => {
                   onClick={() => toggleItem(item.id)}
                   onKeyDown={(e) => handleKeyDown(e, item.id)}
                 >
+
                   <span className="text-gray-900 dark:text-gray-300 font-bold pr-4">
                     {item.question}
                   </span>
                   <span
                     className={`flex-shrink-0 w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 transition-transform duration-300 ${
+
                       isOpen ? "rotate-180" : ""
                     }`}
                     aria-hidden="true"
@@ -95,7 +103,9 @@ const FAQAccordion: FC<FAQAccordionProps> = ({ items }) => {
                   isOpen ? "pb-5 max-h-96 opacity-100" : "max-h-0 opacity-0"
                 }`}
               >
+
                 <p className="text-gray-700 dark:text-gray-400 leading-relaxed border-t border-gray-100 dark:border-white/5 pt-4">
+
                   {item.answer}
                 </p>
               </div>

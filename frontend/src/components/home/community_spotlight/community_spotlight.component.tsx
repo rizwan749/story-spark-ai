@@ -127,6 +127,49 @@ const CommunitySpotlightComponent = () => {
   }
 
   return (
+    <section className="story-section">
+      <div className="story-page-shell">
+        <div className="mb-8 max-w-2xl">
+          <h2 className="story-section-heading">
+            Community Spotlight
+          </h2>
+          <p className="story-section-copy mt-3">
+            Top stories handpicked from our community
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+          {(data?.posts?.length ?? 0) > 0 ? (
+            data?.posts?.slice(0, 6).map((post: Post) => (
+              <div
+                key={post._id}
+                onClick={() => navigate(`/post/${post._id}`)}
+                className="motion-card-subtle story-panel group flex cursor-pointer flex-col justify-between rounded-lg p-5 hover:border-blue-400/35 sm:p-6"
+              >
+                <div>
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center">
+                      <SSProfile name={post.author.name} size="h-9 w-9" />
+                      <div className="ml-3 min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-300">
+                          {post.author.name}
+                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <p className="text-xs text-slate-500">
+                            {new Date(post.publishedAt).toLocaleDateString()}
+                          </p>
+                          <span className="text-xs text-slate-600">•</span>
+                          <span className="text-xs font-medium text-indigo-300">
+                            {calculateReadingTime(post.content)} min read
+                          </span>
+                        </div>
+    <div className="px-5 py-10">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-gray-200">
+          Community Spotlight
+        </h2>
+        <p className="text-slate-600 dark:text-gray-400 mt-2">
+          Top stories handpicked from our community
+        </p>
     <section className="px-5 py-10 text-slate-900 dark:text-slate-100">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -185,14 +228,94 @@ const CommunitySpotlightComponent = () => {
                         {style.label}
                       </p>
                     </div>
-                  </div>
 
+                    <div onClick={(e) => e.stopPropagation()} className="relative z-10">
+                      <BookmarkButton
+                        storyId={post._id}
+                        bookmarks={post.bookmarks}
+                        className="rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-purple-300"
+                      />
+                    </div>
+                  </div>
+                  <h3 className="mb-2 text-lg font-bold leading-snug text-slate-100 transition-colors group-hover:text-blue-300">
+                    {post.title}
+                  </h3>
+                  <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-slate-400">
+                    {post.content}
+                  </p>
+                </div>
+
+                <div className="mt-auto flex flex-col gap-4 border-t border-slate-700/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <i className="far fa-eye"></i> {post.viewsCount}
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-200 mb-2">
+                  {post.title}
+                </h3>
+                <p className="text-slate-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
+                  {post.content}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between mt-auto border-t border-slate-200 dark:border-slate-700/40 pt-4">
+                <div className="flex items-center text-xs text-slate-500 dark:text-gray-500 gap-3">
+                  <span className="flex items-center gap-1">
+                    <i className="far fa-eye"></i> {post.viewsCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => handleLike(e, post._id)}
+                    className="flex items-center gap-1 text-slate-500 dark:text-gray-500 hover:text-red-400 transition"
                   <span
                     className={`shrink-0 rounded-full px-3 py-1 text-sm font-black shadow-lg ${style.badge}`}
                   >
                     #{rank}
                   </span>
                 </div>
+                <div className="flex flex-wrap gap-1">
+                  {post.topic.slice(0, 2).map((topic) => (
+                    <span
+                      key={topic._id}
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${topic.color}`}
+                    >
+                      {topic.title}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleLike(e, post._id)}
+                      className="motion-icon flex items-center gap-1 text-slate-500 hover:text-red-400"
+                    >
+                      <i className="far fa-heart"></i>
+                      {post.likesCount}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {post.topic.slice(0, 2).map((topic) => (
+                      <span
+                        key={topic._id}
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${topic.color}`}
+                      >
+                        {topic.title}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="story-panel rounded-lg px-4 py-4 text-slate-300 md:col-span-2 lg:col-span-3">
+              No spotlight stories yet.
+            </p>
+          )}
+        </div>
+            </div>
+          ))
+        ) : (
+          <p className="col-span-3 rounded-lg border border-slate-200 dark:border-slate-700/70 bg-slate-100 dark:bg-slate-900/40 px-4 py-4 text-slate-700 dark:text-slate-300">
+            No spotlight stories yet.
+          </p>
+        )}
+      </div>
 
                 <div className="mb-5 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-700/60 dark:bg-slate-800/50">
                   <p className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-500">

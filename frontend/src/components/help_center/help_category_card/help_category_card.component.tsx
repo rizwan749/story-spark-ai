@@ -26,6 +26,7 @@ const HelpCategoryCard: FC<HelpCategoryCardProps> = ({ category }) => {
         {category.description}
       </p>
       <span className="inline-flex items-center gap-1 mt-4 text-sm text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-800 dark:group-hover:text-indigo-300 font-bold transition-colors">
+
         Learn more
         <i
           className="fas fa-arrow-right text-xs transition-transform group-hover:translate-x-1"
