@@ -98,4 +98,3 @@ router.post(
 );
 
 export const PostRouter = router;
-
