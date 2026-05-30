@@ -130,12 +130,12 @@ const getPosts = async (
     .sort(sortCondition)
     .skip(skip)
     .limit(limit)
-    .populate("author", "name email createdAt profile.bio")
+    .populate("author", "name createdAt profile.bio")
     .populate({
       path: "reactions",
-      populate: { path: "userId", select: "email" },
+      populate: { path: "userId", select: "_id" },
     })
-    .populate("bookmarks", "email");
+    .populate("bookmarks", "_id");
   const total = await Post.countDocuments(whereCondition);
   return {
     meta: {
@@ -189,12 +189,12 @@ const getPublishedPostsByAuthor = async (
     .sort(sortCondition)
     .skip(skip)
     .limit(limit)
-    .populate("author", "name email createdAt")
+    .populate("author", "name createdAt")
     .populate({
       path: "reactions",
-      populate: { path: "userId", select: "email" },
+      populate: { path: "userId", select: "_id" },
     })
-    .populate("bookmarks", "email");
+    .populate("bookmarks", "_id");
   const total = await Post.countDocuments(whereCondition);
 
   return {
@@ -212,12 +212,12 @@ const getLatestPosts = async () => {
     const res = await Post.find({ isDeleted: { $ne: true } })
       .sort({ createdAt: -1 })
       .limit(50)
-      .populate("author", "name email createdAt profile.bio")
+      .populate("author", "name createdAt profile.bio")
       .populate({
         path: "reactions",
-        populate: { path: "userId", select: "email" },
+        populate: { path: "userId", select: "_id" },
       })
-      .populate("bookmarks", "email");
+      .populate("bookmarks", "_id");
     return res;
   } catch (error) {
     throw new ApiError(
@@ -235,12 +235,12 @@ const getFeaturedPosts = async () => {
     })
       .sort({ createdAt: -1, updatedBy: -1 })
       .limit(10)
-      .populate("author", "name email createdAt profile.bio")
+      .populate("author", "name createdAt profile.bio")
       .populate({
         path: "reactions",
-        populate: { path: "userId", select: "email" },
+        populate: { path: "userId", select: "_id" },
       })
-      .populate("bookmarks", "email");
+      .populate("bookmarks", "_id");
     return res;
   } catch (error) {
     throw new ApiError(
@@ -268,12 +268,12 @@ const doFeaturedPosts = async (postId: string) => {
 
 const getSinglePost = async (id: string) => {
   const postById = await Post.findOne({ _id: id, isDeleted: { $ne: true } })
-    .populate("author", "name email createdAt profile.bio")
+    .populate("author", "name createdAt profile.bio")
     .populate({
       path: "reactions",
-      populate: { path: "userId", select: "email" },
+      populate: { path: "userId", select: "_id" },
     })
-    .populate("bookmarks", "email");
+    .populate("bookmarks", "_id");
   if (!postById) {
     throw new ApiError(httpStatus.NOT_FOUND, "Post not found!");
   }
@@ -287,12 +287,12 @@ const getPostsByTag = async (tag: string, excludeId?: string) => {
   }
   const result = await Post.find(query)
     .limit(2)
-    .populate("author", "name email createdAt profile.bio")
+    .populate("author", "name createdAt profile.bio")
     .populate({
       path: "reactions",
-      populate: { path: "userId", select: "email" },
+      populate: { path: "userId", select: "_id" },
     })
-    .populate("bookmarks", "email");
+    .populate("bookmarks", "_id");
   return result;
 };
 

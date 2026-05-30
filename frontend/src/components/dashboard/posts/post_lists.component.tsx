@@ -240,9 +240,6 @@ const PostListsComponent: React.FC = () => {
                     <div className="text-sm text-gray-200">
                       {post.author?.name || 'Unknown User'}
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {post.author?.email || 'N/A'}
-                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-wrap gap-1.5 max-w-[200px]">

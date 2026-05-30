@@ -63,7 +63,7 @@ const PostDetailsComponent = () => {
 
   const authorId = post?.author?._id;
   const isOwner = Boolean(
-    currentUser?.email && post?.author?.email === currentUser.email
+    currentUser?.userId && authorId === currentUser.userId
   );
 
   const { data: followData } = useGetFollowStatusQuery(authorId || "", {
@@ -156,14 +156,12 @@ const PostDetailsComponent = () => {
   const hasUserReacted = post?.reactions?.some((r) => {
     const userId = r.userId;
 
-    const email =
-      typeof userId === "object" &&
-      userId !== null &&
-      "email" in userId
-        ? userId.email
-        : undefined;
+    const reactorId =
+      typeof userId === "object" && userId !== null && "_id" in userId
+        ? userId._id
+        : userId;
 
-    return email === currentUser?.email;
+    return Boolean(currentUser?.userId) && reactorId === currentUser?.userId;
   });
 
   const handleTwitterShare = () => {
