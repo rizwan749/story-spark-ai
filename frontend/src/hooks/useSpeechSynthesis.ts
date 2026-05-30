@@ -28,8 +28,16 @@ export interface UseSpeechSynthesisResult {
   stop: () => void;
   /** Current playback speed. */
   rate: number;
-  /** Update playback speed for future narration and active utterances when possible. */
+  /** Update narration speed for future and active utterances. */
   setRate: (nextRate: number) => void;
+  /** Current pitch multiplier. */
+  pitch: number;
+  /** Update narration pitch for future and active utterances. */
+  setPitch: (nextPitch: number) => void;
+  /** Current output volume. */
+  volume: number;
+  /** Update narration volume for future and active utterances. */
+  setVolume: (nextVolume: number) => void;
   /** Word-level progress metadata for UI rendering and text highlighting. */
   progress: SpeechProgress;
   /** Browser support flag for the Web Speech API. */
@@ -69,6 +77,29 @@ const buildWordRanges = (inputText: string): WordRange[] => {
   return ranges;
 };
 
+const findVoiceByGender = (
+  voices: SpeechSynthesisVoice[],
+  gender: "female" | "male"
+): SpeechSynthesisVoice | undefined => {
+  const genderMatchers: Record<"female" | "male", RegExp> = {
+    female: /(female|zira|samantha|victoria|siri female|google uk english female|google us english female)/i,
+    male: /(male|david|guy|alex|siri male|google uk english male|google us english male)/i,
+  };
+
+  const matchedVoice = voices.find((voice) => genderMatchers[gender].test(voice.name));
+  if (matchedVoice) {
+    return matchedVoice;
+  }
+
+  return voices.find((voice) => {
+    const normalized = voice.name.toLowerCase();
+    if (gender === "female") {
+      return /female/i.test(normalized) && !/male/i.test(normalized);
+    }
+    return /male/i.test(normalized) && !/female/i.test(normalized);
+  });
+};
+
 const getWordIndexAtCharIndex = (
   charIndex: number,
   ranges: WordRange[]
@@ -103,18 +134,24 @@ const getWordIndexAtCharIndex = (
  * It handles voice loading, play/pause/resume/stop controls, rate changes,
  * and word-level progress tracking for optional text highlighting.
  */
-export const useSpeechSynthesis = (text: string): UseSpeechSynthesisResult => {
+export const useSpeechSynthesis = (
+  text: string,
+  voiceGender: "female" | "male" = "female"
+): UseSpeechSynthesisResult => {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const sessionRef = useRef(0);
   const previousTextRef = useRef(text);
 
   const [isSupported, setIsSupported] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [rateState, setRateState] = useState(1);
+  const [pitchState, setPitchState] = useState(1);
+  const [volumeState, setVolumeState] = useState(1);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
 
   const wordRanges = useMemo(() => buildWordRanges(text), [text]);
@@ -184,7 +221,15 @@ export const useSpeechSynthesis = (text: string): UseSpeechSynthesisResult => {
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = rateState;
+    utterance.pitch = pitchState;
+    utterance.volume = volumeState;
     utterance.lang = window.navigator.language || "en-US";
+
+    const selectedVoice = findVoiceByGender(voices, voiceGender);
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
 
     utterance.onstart = () => {
       if (sessionRef.current !== sessionId) {
@@ -235,7 +280,7 @@ export const useSpeechSynthesis = (text: string): UseSpeechSynthesisResult => {
 
     utteranceRef.current = utterance;
     speechSynthesis.speak(utterance);
-  }, [clearUtterance, isReady, isSupported, rateState, text, totalWords, wordRanges]);
+  }, [clearUtterance, isReady, isSupported, rateState, text, totalWords, voiceGender, wordRanges, voices, pitchState, volumeState]);
 
   const pause = useCallback(() => {
     if (!isSupported || !utteranceRef.current) {
@@ -277,6 +322,22 @@ export const useSpeechSynthesis = (text: string): UseSpeechSynthesisResult => {
     }
   }, []);
 
+  const setPitch = useCallback((nextPitch: number) => {
+    setPitchState(nextPitch);
+
+    if (utteranceRef.current) {
+      utteranceRef.current.pitch = nextPitch;
+    }
+  }, []);
+
+  const setVolume = useCallback((nextVolume: number) => {
+    setVolumeState(nextVolume);
+
+    if (utteranceRef.current) {
+      utteranceRef.current.volume = nextVolume;
+    }
+  }, []);
+
   useEffect(() => {
     const supported = hasSpeechSupport();
     setIsSupported(supported);
@@ -295,8 +356,9 @@ export const useSpeechSynthesis = (text: string): UseSpeechSynthesisResult => {
         return;
       }
 
-      const voices = speechSynthesis.getVoices();
-      setIsReady(voices.length > 0);
+      const nextVoices = speechSynthesis.getVoices();
+      setVoices(nextVoices);
+      setIsReady(nextVoices.length > 0);
     };
 
     syncVoices();
@@ -344,6 +406,10 @@ export const useSpeechSynthesis = (text: string): UseSpeechSynthesisResult => {
     stop,
     rate: rateState,
     setRate,
+    pitch: pitchState,
+    setPitch,
+    volume: volumeState,
+    setVolume,
     progress,
     isSupported,
     isReady,
