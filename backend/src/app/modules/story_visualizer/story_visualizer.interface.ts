@@ -9,6 +9,8 @@ export interface IStoryboardScene {
   sceneNumber: number;
   caption: string;
   imagePrompt: string;
+  imageUrl?: string;
+  imageStatus?: "generated" | "failed" | "pending";
 }
 
 export interface IStoryVisualizerResult {

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { StoryboardScene } from "../../redux/apis/story.visualizer.api";
 
 type StoryVisualizerProps = {
@@ -5,6 +6,58 @@ type StoryVisualizerProps = {
   styleGuide: string;
   title?: string;
   onClose?: () => void;
+};
+
+type IllustrationPreviewProps = {
+  scene: StoryboardScene;
+};
+
+const IllustrationPreview = ({ scene }: IllustrationPreviewProps) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const shouldShowImage =
+    Boolean(scene.imageUrl) &&
+    scene.imageStatus !== "failed" &&
+    !imageFailed;
+
+  if (shouldShowImage) {
+    return (
+      <div className="aspect-[4/3] min-h-64 overflow-hidden rounded-2xl border border-indigo-300/20 bg-slate-950 shadow-inner">
+        <img
+          src={scene.imageUrl}
+          alt={`Storyboard illustration for scene ${scene.sceneNumber}: ${scene.caption}`}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+        />
+      </div>
+    );
+  }
+
+  const message =
+    scene.imageStatus === "failed" || imageFailed
+      ? "Artwork could not be generated for this scene."
+      : scene.imageStatus === "pending"
+        ? "Artwork generation is still pending."
+        : "AI-generated artwork will appear here when image generation is available.";
+
+  return (
+    <div className="flex aspect-[4/3] min-h-64 items-center justify-center overflow-hidden rounded-2xl border border-indigo-300/20 bg-gradient-to-br from-slate-700 via-indigo-900/80 to-purple-950 p-6 text-center shadow-inner">
+      <div className="max-w-sm rounded-2xl border border-white/10 bg-slate-950/30 px-6 py-7 backdrop-blur-sm">
+        <div className="mb-3 text-4xl" aria-hidden="true">
+          Image
+        </div>
+        <p className="text-lg font-bold text-slate-100">
+          Illustration Preview
+        </p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          {message}
+        </p>
+        <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-indigo-200">
+          This scene is ready for image generation.
+        </p>
+      </div>
+    </div>
+  );
 };
 
 const StoryVisualizer = ({
@@ -63,22 +116,7 @@ const StoryVisualizer = ({
                 </div>
 
                 <div className="px-5 pb-5">
-                  <div className="flex aspect-[4/3] min-h-64 items-center justify-center overflow-hidden rounded-2xl border border-indigo-300/20 bg-gradient-to-br from-slate-700 via-indigo-900/80 to-purple-950 p-6 text-center shadow-inner">
-                    <div className="max-w-sm rounded-2xl border border-white/10 bg-slate-950/30 px-6 py-7 backdrop-blur-sm">
-                      <div className="mb-3 text-4xl" aria-hidden="true">
-                        🖼️
-                      </div>
-                      <p className="text-lg font-bold text-slate-100">
-                        Illustration Preview
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-300">
-                        AI-generated artwork will appear here in Phase 3.
-                      </p>
-                      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-indigo-200">
-                        This scene is ready for image generation.
-                      </p>
-                    </div>
-                  </div>
+                  <IllustrationPreview scene={scene} />
 
                   <details className="group mt-4 rounded-xl border border-slate-700/70 bg-slate-950/30">
                     <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-slate-300 transition-colors hover:text-slate-100">
