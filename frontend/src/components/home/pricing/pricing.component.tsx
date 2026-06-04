@@ -27,6 +27,7 @@ const plans = [
     ],
     linkTo: "/payment?plan=Pro&price=19",
     buttonLabel: "Start Pro Trial",
+    highlight: true,
   },
   {
     title: "Enterprise",

@@ -828,10 +828,14 @@ select:focus-visible {
 }
 
 .story-section-heading {
-  color: #f8fafc;
+  color: #0f172a;
   font-size: clamp(1.875rem, 4vw, 2.75rem);
   font-weight: 800;
   line-height: 1.08;
+}
+
+html.dark .story-section-heading {
+  color: #f8fafc;
 }
 
 .story-section-copy {
@@ -842,6 +846,13 @@ select:focus-visible {
 
 .story-panel {
   border: 1px solid rgba(148, 163, 184, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.7)),
+    rgba(241, 245, 249, 0.5);
+  box-shadow: 0 20px 55px rgba(148, 163, 184, 0.15);
+}
+
+html.dark .story-panel {
   background:
     linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.58)),
     rgba(30, 41, 59, 0.42);
