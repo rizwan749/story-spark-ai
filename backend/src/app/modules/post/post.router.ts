@@ -8,7 +8,6 @@ import { ENUM_USER_ROLE } from "../../../enums/user";
 
 const router = express.Router();
 
-// Create a new post
 router.post(
   "/create",
   auth(
@@ -21,44 +20,19 @@ router.post(
   PostController.createPost
 );
 
-router.get(
-  "/tag/:tag",
-  PostController.getPostsByTag
-);
-
-router.get(
-  "/:id",
-  PostController.getSinglePost
-);
-
-router.get(
-  "/latest-posts",
-  PostController.getLatestPosts
-);
-
-router.get(
-  "/latest-lists",
-  PostController.getLatestPosts
-);
-
-router.get(
-  "/featured-posts",
-  PostController.getFeaturedPosts
-);
-
-router.get(
-  "/feature-lists",
-  PostController.getFeaturedPosts
-);
+router.get("/", PostController.getPosts);
+router.get("/latest-posts", PostController.getLatestPosts);
+router.get("/latest-lists", PostController.getLatestPosts);
+router.get("/featured-posts", PostController.getFeaturedPosts);
+router.get("/feature-lists", PostController.getFeaturedPosts);
+router.get("/tag/:tag", PostController.getPostsByTag);
+router.get("/:id", PostController.getSinglePost);
 
 router.patch(
   "/featured/:postId",
   auth(ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
   PostController.doFeaturedPosts
 );
-
-router.get("/tag/:tag", PostController.getPostsByTag);
-router.get("/:id", PostController.getSinglePost);
 
 router.patch(
   "/bookmark/:id",
@@ -94,7 +68,6 @@ router.delete(
   PostController.deletePost
 );
 
-// AI variation routes
 router.post(
   "/remix",
   auth(
