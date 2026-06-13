@@ -174,22 +174,6 @@ const getAchievements = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const updateWritingStreak = catchAsync(async (req: Request, res: Response) => {
-  const token = await getToken(req);
-  const user = await User.findOne({ email: token.email });
-  if (!user) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
-  }
-  await WritingStreakService.updateStreakAndUnlocks(String(user._id));
-  const result = await WritingStreakService.getStreak(String(user._id));
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Writing streak updated successfully!",
-    data: result,
-  });
-});
-
 export const UserController = {
   getAllUsers,
   getUser,
@@ -203,5 +187,4 @@ export const UserController = {
   getFollowStatus,
   getWritingStreak,
   getAchievements,
-  updateWritingStreak,
 };
