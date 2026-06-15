@@ -7,7 +7,7 @@ Shows the frontend dev exactly what signals to collect and what the
 API response looks like, so they can wire it to the real UI.
 
 Run:
-    pip install streamlit tensorflow keras-tuner scikit-learn joblib
+    pip install streamlit tensorflow keras-tuner scikit-learn joblib pandas
     streamlit run app.py
 
 Place at: story-spark-ai/ml/app.py
@@ -15,26 +15,27 @@ Place at: story-spark-ai/ml/app.py
 
 import sys
 from pathlib import Path
+import json
+import random
+
+import numpy as np
+import pandas as pd
+import streamlit as st
 
 APP_DIR = Path(__file__).resolve().parent
 ML_DIR = APP_DIR / "ml"
 SAVED_DIR = ML_DIR / "saved"
 
 sys.path.insert(0, str(ML_DIR))
-from ml.score_api import score_bp
-import json
-import random
-import numpy as np
-import streamlit as st
+from ml.score_api import score_bp  # noqa: F401
 
-# ── Page config ───────────────────────────────────────────────────────────────
+
 st.set_page_config(
     page_title="Writer's Block Detector",
     page_icon="✍️",
     layout="wide",
 )
 
-# ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@300;600;800&display=swap');
@@ -44,7 +45,6 @@ st.markdown("""
 
     .main { background: #0d0f14; }
 
-    /* cards */
     .card {
         background: #151821;
         border: 1px solid #22273a;
@@ -52,22 +52,12 @@ st.markdown("""
         padding: 1.4rem 1.6rem;
         margin-bottom: 1rem;
     }
-    .card-title {
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: #5a6080;
-        margin-bottom: 0.5rem;
-    }
 
-    /* status badge */
     .badge-stuck  { background:#ff3b5c22; color:#ff3b5c; border:1px solid #ff3b5c55;
                     padding:6px 18px; border-radius:99px; font-weight:700; font-size:1.05rem; }
     .badge-flow   { background:#00d17022; color:#00d170; border:1px solid #00d17055;
                     padding:6px 18px; border-radius:99px; font-weight:700; font-size:1.05rem; }
 
-    /* suggestion box */
     .suggestion {
         background: linear-gradient(135deg, #1a1f35 0%, #151821 100%);
         border-left: 3px solid #7c6dfa;
@@ -78,7 +68,6 @@ st.markdown("""
         margin-top: 0.8rem;
     }
 
-    /* metric row */
     .metric-row { display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.4rem; }
     .metric-box {
         flex:1; min-width:130px;
@@ -91,7 +80,6 @@ st.markdown("""
     .metric-val { font-size:1.5rem; font-weight:800; color:#e0e4f8; }
     .metric-lbl { font-size:0.7rem; color:#5a6080; text-transform:uppercase; letter-spacing:0.08em; }
 
-    /* json block */
     .json-block {
         background:#0a0c11;
         border:1px solid #1e2235;
@@ -104,14 +92,11 @@ st.markdown("""
         margin-top:0.6rem;
     }
 
-    /* section header */
     h2 { color:#e0e4f8 !important; font-weight:800 !important; }
     h3 { color:#9aa3c8 !important; font-weight:600 !important; }
 
-    /* slider labels */
     .stSlider label { color:#9aa3c8 !important; font-size:0.85rem !important; }
 
-    /* tabs */
     .stTabs [data-baseweb="tab"] { color: #5a6080; }
     .stTabs [aria-selected="true"] { color: #7c6dfa !important; border-bottom-color: #7c6dfa !important; }
 
@@ -119,8 +104,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-# ── Model loader (cached) ─────────────────────────────────────────────────────
 
 @st.cache_resource(show_spinner="Loading model…")
 def load_artifacts():
@@ -133,27 +116,55 @@ def load_artifacts():
         "scaler": SAVED_DIR / "scaler.pkl",
         "threshold": SAVED_DIR / "threshold.json",
     }
+
     missing = [str(path) for path in artifact_paths.values() if not path.exists()]
     if missing:
         raise FileNotFoundError(missing)
 
-    model     = keras_load(artifact_paths["model"])
-    scaler    = joblib.load(artifact_paths["scaler"])
+    model = keras_load(artifact_paths["model"])
+    scaler = joblib.load(artifact_paths["scaler"])
+
     with artifact_paths["threshold"].open() as fh:
         threshold = json.load(fh)["threshold"]
+
     return model, scaler, threshold
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
 FEATURE_KEYS = [
-    "prompt_length", "time_to_submit", "regeneration_count",
-    "session_duration", "backspace_ratio", "pause_duration",
-    "confidence_score", "blocked_word_count",
+    "prompt_length",
+    "time_to_submit",
+    "regeneration_count",
+    "session_duration",
+    "backspace_ratio",
+    "pause_duration",
+    "confidence_score",
+    "blocked_word_count",
 ]
 
+FEATURE_LABELS = {
+    "prompt_length": "Prompt Length",
+    "time_to_submit": "Time to Submit",
+    "regeneration_count": "Regeneration Count",
+    "session_duration": "Session Duration",
+    "backspace_ratio": "Backspace Ratio",
+    "pause_duration": "Pause Duration",
+    "confidence_score": "Confidence Score",
+    "blocked_word_count": "Blocked Word Count",
+}
+
+FEATURE_BASELINES = {
+    "prompt_length": 150,
+    "time_to_submit": 60,
+    "regeneration_count": 5,
+    "session_duration": 30,
+    "backspace_ratio": 20,
+    "pause_duration": 10,
+    "confidence_score": 7,
+    "blocked_word_count": 2,
+}
+
 SUGGESTIONS = {
-    "prompt_length":      [
+    "prompt_length": [
         "Stuck on what to write? Start with a feeling your character has right now.",
         "Write just one sentence: where is your character and what do they smell?",
     ],
@@ -161,15 +172,15 @@ SUGGESTIONS = {
         "Too many options can paralyze. Pick the last generation and edit one sentence.",
         "When regenerating a lot, the direction is usually wrong — not the words.",
     ],
-    "backspace_ratio":    [
+    "backspace_ratio": [
         "You're deleting a lot — try writing without backspace for 2 minutes.",
         "High backspace use = perfectionism. Write ugly first, edit later.",
     ],
-    "pause_duration":     [
+    "pause_duration": [
         "Long pauses happen. Set a 5-minute timer and write anything — even bad.",
         "Short walk. Your brain solves writing problems in the background.",
     ],
-    "confidence_score":   [
+    "confidence_score": [
         "Low confidence is normal. Write the worst possible version of this scene.",
         "Skip this scene and write a future one. Fill the gap later.",
     ],
@@ -177,40 +188,90 @@ SUGGESTIONS = {
         "Frustration building? Step away for 5 minutes.",
         "Try writing the scene from a different character's POV.",
     ],
-    "general":            [
+    "general": [
         "Describe the room your character is in — setting often unlocks the story.",
         "Lower the stakes. What's the smallest thing that could happen in this scene?",
     ],
 }
 
-def get_suggestion(session_raw: np.ndarray) -> str:
+
+def get_feature_risk_scores(session_raw: np.ndarray) -> dict:
     avg = session_raw.mean(axis=0)
-    scores = {
-        "prompt_length":      1 / (avg[0] + 1),
-        "regeneration_count": avg[2] / 40,
-        "backspace_ratio":    avg[4] / 100,
-        "pause_duration":     avg[5] / 90,
-        "confidence_score":   1 / (avg[6] + 1),
-        "blocked_word_count": avg[7] / 15,
-    }
+    scores = {}
+
+    for index, key in enumerate(FEATURE_KEYS):
+        value = float(avg[index])
+        baseline = FEATURE_BASELINES[key]
+
+        if key in {"prompt_length", "confidence_score"}:
+            scores[key] = max(0.0, (baseline - value) / max(baseline, 1))
+        else:
+            scores[key] = max(0.0, (value - baseline) / max(baseline, 1))
+
+    return scores
+
+
+def get_suggestion(session_raw: np.ndarray) -> str:
+    scores = get_feature_risk_scores(session_raw)
     worst = max(scores, key=scores.get)
     return random.choice(SUGGESTIONS.get(worst, SUGGESTIONS["general"]))
 
 
+def build_explainability(session_raw: np.ndarray) -> dict:
+    avg = session_raw.mean(axis=0)
+    raw_scores = get_feature_risk_scores(session_raw)
+    total_score = sum(raw_scores.values()) or 1
+
+    ranked_features = sorted(
+        [
+            {
+                "feature": key,
+                "label": FEATURE_LABELS[key],
+                "average": round(float(avg[index]), 2),
+                "contribution": round((raw_scores[key] / total_score) * 100, 2),
+            }
+            for index, key in enumerate(FEATURE_KEYS)
+        ],
+        key=lambda item: item["contribution"],
+        reverse=True,
+    )
+
+    timeline = [
+        {
+            "timestep": index + 1,
+            "confidence_score": float(row[6]),
+            "pause_duration": float(row[5]),
+            "backspace_ratio": float(row[4]),
+        }
+        for index, row in enumerate(session_raw)
+    ]
+
+    return {
+        "primary_cause": ranked_features[0],
+        "top_features": ranked_features[:3],
+        "feature_importance": ranked_features,
+        "timeline": timeline,
+        "top_contribution_percent": ranked_features[0]["contribution"],
+    }
+
+
 def run_detection(session_raw: np.ndarray, model, scaler, threshold) -> dict:
     from model import SEQ_LEN, N_FEATURES
-    seq_scaled    = scaler.transform(session_raw).reshape(1, SEQ_LEN, N_FEATURES)
+
+    seq_scaled = scaler.transform(session_raw).reshape(1, SEQ_LEN, N_FEATURES)
     reconstructed = model.predict(seq_scaled, verbose=0)
-    score         = float(np.mean((seq_scaled - reconstructed) ** 2))
-    is_stuck      = score > threshold
-    ratio         = score / threshold
-    confidence    = "N/A" if not is_stuck else ("High" if ratio > 2 else ("Medium" if ratio > 1.2 else "Low"))
+    score = float(np.mean((seq_scaled - reconstructed) ** 2))
+    is_stuck = score > threshold
+    ratio = score / threshold if threshold else 0
+    confidence = "N/A" if not is_stuck else ("High" if ratio > 2 else ("Medium" if ratio > 1.2 else "Low"))
+
     return {
-        "is_stuck":      is_stuck,
-        "confidence":    confidence,
+        "is_stuck": is_stuck,
+        "confidence": confidence,
         "anomaly_score": round(score, 6),
-        "threshold":     round(threshold, 6),
-        "suggestion":    get_suggestion(session_raw) if is_stuck else "",
+        "threshold": round(threshold, 6),
+        "suggestion": get_suggestion(session_raw) if is_stuck else "",
+        "explainability": build_explainability(session_raw),
     }
 
 
@@ -226,6 +287,7 @@ def quick_fill_normal() -> dict:
         "blocked_word_count": random.randint(0, 1),
     }
 
+
 def quick_fill_stuck() -> dict:
     return {
         "prompt_length": random.randint(1, 20),
@@ -239,15 +301,12 @@ def quick_fill_stuck() -> dict:
     }
 
 
-# ── Session state ─────────────────────────────────────────────────────────────
-
 if "result" not in st.session_state:
     st.session_state.result = None
+
 if "session_raw" not in st.session_state:
     st.session_state.session_raw = None
 
-
-# ── Header ────────────────────────────────────────────────────────────────────
 
 st.markdown("""
 <h2 style='margin-bottom:0'>✍️ Writer's Block Detector</h2>
@@ -258,79 +317,72 @@ LSTM Autoencoder · Anomaly Detection · story-spark-ai/ml
 
 st.divider()
 
-# ── Model status ──────────────────────────────────────────────────────────────
 
 try:
     model, scaler, threshold = load_artifacts()
     st.success("✅ Model loaded from `saved/`", icon=None)
-    model_ready = True
 except FileNotFoundError as e:
     st.error(f"⚠️ Model not found — run `python ml/train.py` first.\n\nMissing: `{e}`")
-    model_ready = False
     st.stop()
 
 
-# ── Tabs ──────────────────────────────────────────────────────────────────────
-
 tab_manual, tab_auto, tab_api = st.tabs([
-    "🎛️  Manual Input", "⚡  Quick Simulate", "📡  API Reference"
+    "🎛️  Manual Input",
+    "⚡  Quick Simulate",
+    "📡  API Reference",
 ])
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 1 — Manual Input
-# ══════════════════════════════════════════════════════════════════════════════
 
 with tab_manual:
     from model import SEQ_LEN
 
     st.markdown(f"### Configure {SEQ_LEN} timesteps")
-    st.caption("Each timestep = one writing window (e.g. ~30 seconds of session data)")
+    st.caption("Each timestep = one writing window, for example around 30 seconds of session data.")
 
-    # One expander per timestep so the page stays compact
     timesteps = []
+
     for i in range(SEQ_LEN):
-        with st.expander(f"Timestep {i+1}", expanded=(i == 0)):
+        with st.expander(f"Timestep {i + 1}", expanded=(i == 0)):
             c1, c2 = st.columns(2)
+
             with c1:
-                pl  = st.slider("Prompt length (words)",   1, 400, 150, key=f"pl_{i}")
-                ts  = st.slider("Time to submit (s)",       1, 180,  60, key=f"ts_{i}")
-                rc  = st.slider("Regeneration count",       0,  50,   2, key=f"rc_{i}")
-                sd  = st.slider("Session duration (s)",     1, 120,  30, key=f"sd_{i}")
+                pl = st.slider("Prompt length (words)", 1, 400, 150, key=f"pl_{i}")
+                ts = st.slider("Time to submit (s)", 1, 180, 60, key=f"ts_{i}")
+                rc = st.slider("Regeneration count", 0, 50, 2, key=f"rc_{i}")
+                sd = st.slider("Session duration (s)", 1, 120, 30, key=f"sd_{i}")
+
             with c2:
-                br  = st.slider("Backspace ratio (0–100)", 0, 100,  10, key=f"br_{i}")
-                pd_ = st.slider("Pause duration (s)",       0,  90,   5, key=f"pd_{i}")
-                cs  = st.slider("Confidence score (1–10)", 1,  10,   8, key=f"cs_{i}")
-                bw  = st.slider("Blocked word count",       0,  20,   0, key=f"bw_{i}")
+                br = st.slider("Backspace ratio (0–100)", 0, 100, 10, key=f"br_{i}")
+                pd_ = st.slider("Pause duration (s)", 0, 90, 5, key=f"pd_{i}")
+                cs = st.slider("Confidence score (1–10)", 1, 10, 8, key=f"cs_{i}")
+                bw = st.slider("Blocked word count", 0, 20, 0, key=f"bw_{i}")
+
             timesteps.append([pl, ts, rc, sd, br, pd_, cs, bw])
 
     if st.button("🔍 Run Detection", type="primary", use_container_width=True):
         session_raw = np.array(timesteps, dtype=np.float32)
-        st.session_state.result     = run_detection(session_raw, model, scaler, threshold)
+        st.session_state.result = run_detection(session_raw, model, scaler, threshold)
         st.session_state.session_raw = session_raw
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — Quick Simulate
-# ══════════════════════════════════════════════════════════════════════════════
 
 with tab_auto:
     from model import SEQ_LEN
 
     st.markdown("### Simulate a session automatically")
-    st.caption("Fills all timesteps from the same distribution used in `train.py`.")
+    st.caption("Fills all timesteps from the same distribution used in train.py.")
 
     col_a, col_b = st.columns(2)
+
     with col_a:
         if st.button("🟢 Normal creative flow", use_container_width=True):
             raw = np.array([list(quick_fill_normal().values()) for _ in range(SEQ_LEN)], dtype=np.float32)
-            st.session_state.result      = run_detection(raw, model, scaler, threshold)
+            st.session_state.result = run_detection(raw, model, scaler, threshold)
             st.session_state.session_raw = raw
 
     with col_b:
         if st.button("🔴 Simulate writer's block", use_container_width=True):
             raw = np.array([list(quick_fill_stuck().values()) for _ in range(SEQ_LEN)], dtype=np.float32)
-            st.session_state.result      = run_detection(raw, model, scaler, threshold)
+            st.session_state.result = run_detection(raw, model, scaler, threshold)
             st.session_state.session_raw = raw
 
     st.divider()
@@ -339,24 +391,22 @@ with tab_auto:
         st.markdown("#### Feature averages across timesteps")
         avg = st.session_state.session_raw.mean(axis=0)
         cols = st.columns(len(FEATURE_KEYS))
+
         for col, key, val in zip(cols, FEATURE_KEYS, avg):
             with col:
-                st.metric(key.replace("_", " "), f"{val:.1f}")
+                st.metric(FEATURE_LABELS[key], f"{val:.1f}")
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Result panel — shown below both tabs if a result exists
-# ══════════════════════════════════════════════════════════════════════════════
 
 if st.session_state.result:
     r = st.session_state.result
+
     st.divider()
     st.markdown("## Result")
 
     status_html = (
         '<span class="badge-stuck">🔴 WRITER\'S BLOCK DETECTED</span>'
-        if r["is_stuck"] else
-        '<span class="badge-flow">🟢 NORMAL CREATIVE FLOW</span>'
+        if r["is_stuck"]
+        else '<span class="badge-flow">🟢 NORMAL CREATIVE FLOW</span>'
     )
     st.markdown(status_html, unsafe_allow_html=True)
 
@@ -380,33 +430,107 @@ if st.session_state.result:
     if r["is_stuck"] and r["suggestion"]:
         st.markdown(f'<div class="suggestion">💡 {r["suggestion"]}</div>', unsafe_allow_html=True)
 
-    st.markdown("#### Raw API response (what the frontend receives)")
+    explanation = r.get("explainability")
+
+    if explanation:
+        st.markdown("## Explainable AI Dashboard")
+
+        primary = explanation["primary_cause"]
+        st.markdown(f"""
+        <div class="suggestion">
+          🧠 Primary Cause: <strong>{primary['label']}</strong><br/>
+          Top Feature Contribution: <strong>{primary['contribution']}%</strong>
+        </div>
+        """, unsafe_allow_html=True)
+
+        feature_df = pd.DataFrame(explanation["feature_importance"])
+        timeline_df = pd.DataFrame(explanation["timeline"])
+
+        col_bar, col_pie = st.columns(2)
+
+        with col_bar:
+            st.markdown("### Feature Importance Bar Chart")
+            st.bar_chart(feature_df, x="label", y="contribution")
+
+        with col_pie:
+            st.markdown("### Feature Contribution Pie Chart")
+            st.vega_lite_chart(
+                feature_df,
+                {
+                    "mark": {"type": "arc", "innerRadius": 45},
+                    "encoding": {
+                        "theta": {"field": "contribution", "type": "quantitative"},
+                        "color": {"field": "label", "type": "nominal"},
+                        "tooltip": [
+                            {"field": "label", "type": "nominal"},
+                            {"field": "contribution", "type": "quantitative"},
+                            {"field": "average", "type": "quantitative"},
+                        ],
+                    },
+                },
+                use_container_width=True,
+            )
+
+        st.markdown("### Root Cause Ranking")
+        for index, feature in enumerate(explanation["top_features"], start=1):
+            st.markdown(
+                f"{index}. **{feature['label']}** — "
+                f"{feature['contribution']}% contribution "
+                f"(average: {feature['average']})"
+            )
+
+        st.markdown("### Session Timeline Analysis")
+        st.line_chart(
+            timeline_df,
+            x="timestep",
+            y=["confidence_score", "pause_duration", "backspace_ratio"],
+        )
+
+        st.markdown("### Feature Contribution Table")
+        st.dataframe(
+            feature_df[["label", "average", "contribution"]],
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        export_payload = {
+            "result": r,
+            "session": st.session_state.session_raw.tolist()
+            if st.session_state.session_raw is not None
+            else [],
+        }
+
+        st.download_button(
+            "⬇️ Download Results as JSON",
+            data=json.dumps(export_payload, indent=2),
+            file_name="writers_block_explainability.json",
+            mime="application/json",
+            use_container_width=True,
+        )
+
+    st.markdown("#### Raw API response")
     st.markdown(f'<div class="json-block">{json.dumps(r, indent=2)}</div>', unsafe_allow_html=True)
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 3 — API Reference
-# ══════════════════════════════════════════════════════════════════════════════
 
 with tab_api:
     st.markdown("### Frontend integration guide")
     st.caption("This is the contract between the ML backend and the frontend tracker.")
 
-    st.markdown("#### What the frontend must collect (per timestep)")
+    st.markdown("#### What the frontend must collect per timestep")
     st.markdown("""
 | Field | Type | Description |
 |---|---|---|
 | `prompt_length` | int | Words typed before submitting |
 | `time_to_submit` | int | Seconds from first keystroke to submit |
-| `regeneration_count` | int | Times user hit "regenerate" |
+| `regeneration_count` | int | Times user hit regenerate |
 | `session_duration` | int | Seconds spent on current writing block |
 | `backspace_ratio` | int | Backspaces / total keystrokes × 100 |
 | `pause_duration` | int | Longest continuous pause in seconds |
-| `confidence_score` | int | Inferred 1–10 score (e.g. from regen rate) |
+| `confidence_score` | int | Inferred 1–10 score |
 | `blocked_word_count` | int | Count of frustration-signal words in prompt |
 """)
 
-    st.markdown("#### POST `/detect` — request body")
+    st.markdown("#### POST `/detect` request body")
     st.code("""
 {
   "session": [
@@ -420,7 +544,6 @@ with tab_api:
       "confidence_score": 2,
       "blocked_word_count": 7
     }
-    // ... 9 more timesteps (SEQ_LEN = 10)
   ]
 }
 """, language="json")
@@ -432,27 +555,21 @@ with tab_api:
   "confidence": "High",
   "anomaly_score": 0.082341,
   "threshold": 0.031204,
-  "suggestion": "Too many options can paralyze. Pick the last generation and edit one sentence."
+  "suggestion": "Too many options can paralyze. Pick the last generation and edit one sentence.",
+  "explainability": {
+    "primary_cause": {
+      "feature": "regeneration_count",
+      "label": "Regeneration Count",
+      "average": 18.4,
+      "contribution": 41.2
+    },
+    "top_features": [],
+    "feature_importance": [],
+    "timeline": [],
+    "top_contribution_percent": 41.2
+  }
 }
 """, language="json")
-
-    st.markdown("#### Minimal Flask wrapper (if you prefer REST over importing detect.py directly)")
-    st.code("""
-from flask import Flask, request, jsonify
-from detect import detect
-
-app = Flask(__name__)
-app.register_blueprint(score_bp)
-
-@app.route("/detect", methods=["POST"])
-def detect_route():
-    data = request.get_json()
-    result = detect(data["session"])
-    return jsonify(result)
-
-if __name__ == "__main__":
-    app.run(debug=True, port=5000)
-""", language="python")
 
     st.markdown("#### Confidence levels")
     st.markdown("""
