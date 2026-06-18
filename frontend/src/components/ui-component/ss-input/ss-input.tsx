@@ -82,8 +82,6 @@ const SSInput = <T extends FieldValues>({
             <i className={icon}></i>
           </span>
         )}
-
-
         <input
           type={inputType}
           id={name}
@@ -135,21 +133,21 @@ const SSInput = <T extends FieldValues>({
   autoComplete={autoComplete}
   {...register(name, validation)}
 />
-
         <input
-  type={inputType}
-  id={name}
-  className={`block w-full max-w-full box-border pl-8 ${
-    type === "password" ? "pr-0" : "pr-0"
-  } py-1.5 text-base text-gray-900 dark:text-gray-200 bg-white dark:bg-slate-800 border rounded-md sm:text-sm ${
-    error
-      ? "border-red-500"
-      : "border-gray-300 focus:outline-indigo-600"
-  }`}
-  placeholder={placeholder}
-  autoComplete={autoComplete}
-  {...register(name, validation)}
-/>
+          type={inputType}
+          id={name}
+          className={`block w-full max-w-full box-border pl-10 ${
+            type === "password" ? "pr-10" : "pr-3"
+          } py-2 text-base text-gray-900 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-400 bg-white dark:bg-slate-800 border rounded-lg sm:text-sm ${
+            error
+              ? "border-red-500 outline-red-500"
+              : "border-gray-300 dark:border-slate-700 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+          }`}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          {...register(name, validation)}
+          autoFocus={autoFocus}
+        />
         {type === "password" && (
   <button
     type="button"
