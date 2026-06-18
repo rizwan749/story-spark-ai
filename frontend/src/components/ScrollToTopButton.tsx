@@ -38,8 +38,10 @@ const ScrollToTopButton = () => {
           : "opacity-0 translate-y-3 pointer-events-none"
         }
       `}
-        bottom: "6rem",
-        left: "6rem",
+      style={{
+        position: "fixed",
+        bottom: "12rem",
+        right: "1.5rem",
         width: "56px",
         height: "56px",
         borderRadius: "50%",
