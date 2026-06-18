@@ -197,8 +197,8 @@ const otpPayload = {
       if (res?.data) {
         const { expiresAt } = res.data;
         setExpiredAt(new Date(expiresAt).getTime());
-        toast.success("OTP resent successfully!");
         setValue("otp", "");
+        toast.success("OTP resent to your email");
         setCooldown(60);
       }
     } catch (error: unknown) {
