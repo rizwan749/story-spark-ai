@@ -710,6 +710,17 @@ const PostDetailsComponent = () => {
         </div>
       )}
 
+      {/* Comparison Drawer */}
+      {showComparison && (
+        <div className="fixed inset-y-0 right-0 z-50 w-full max-w-3xl bg-white dark:bg-[#0f172a]/95 backdrop-blur-xl border-l border-slate-200 dark:border-slate-700/60 shadow-2xl p-6 overflow-y-auto animate-slide-in flex flex-col">
+          <ComparisonMode
+            versions={versions || []}
+            isLoadingVersions={isLoadingVersions}
+            onClose={() => setShowComparison(false)}
+          />
+        </div>
+      )}
+
       {showTree && (
         <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-6">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[80vh] overflow-auto p-6">

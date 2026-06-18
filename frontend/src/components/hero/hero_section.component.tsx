@@ -26,7 +26,10 @@ const itemVariants: any = {
     opacity: 1, 
     y: 0, 
     transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } as const 
-  
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
   },
 };
 
@@ -40,7 +43,8 @@ const features = [
       <svg className="w-7 h-7 text-sky-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
       </svg>
-    )
+    ),
+    path: "/create"
   },
   {
     title: "AI Co-Writer",
@@ -50,7 +54,8 @@ const features = [
       <svg className="w-7 h-7 text-purple-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
       </svg>
-    )
+    ),
+    path: "/writing-assistant"
   },
   {
     title: "Community Driven",
@@ -60,7 +65,8 @@ const features = [
       <svg className="w-7 h-7 text-pink-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
-    )
+    ),
+    path: "/community"
   }
 ];
 
@@ -69,6 +75,8 @@ interface Feature {
   description: string;
   bgClass: string;
   icon: ReactNode;
+  path: string;
+};
 }
 
 const FeatureCard = ({ feature }: { feature: Feature }) => {
@@ -126,6 +134,21 @@ const FeatureCard = ({ feature }: { feature: Feature }) => {
   }, { scope: cardRef });
 
   return (
+    <Link to={feature.path} className="h-full">
+      <div style={{ perspective: "1000px" }} className="h-full">
+        <div
+          ref={cardRef}
+          className={`motion-card relative overflow-hidden backdrop-blur-xl border border-white/10 rounded-3xl p-8 transition-shadow duration-500 shadow-xl group cursor-pointer hover:scale-[1.02] ${feature.bgClass} hover:shadow-[0_0_40px_rgba(255,255,255,0.15)] h-full`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+          <div ref={contentRef} className="relative z-10 pointer-events-none">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-white/10 shadow-lg group-hover:scale-110 transition-transform duration-300">
+              {feature.icon}
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-100 transition-colors duration-300">{feature.title}</h3>
+            <p className="text-white/80 leading-relaxed group-hover:text-white transition-colors duration-300">{feature.description}</p>
+          </div>
     <div style={{ perspective: "1000px" }} className="h-full w-full box-border">
       <div
         ref={cardRef}
@@ -141,7 +164,7 @@ const FeatureCard = ({ feature }: { feature: Feature }) => {
           <p className="text-xs sm:text-sm text-white/80 leading-relaxed group-hover:text-white transition-colors duration-300 font-medium">{feature.description}</p>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 
@@ -288,15 +311,14 @@ const HeroSectionComponent = () => {
       <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-fuchsia-200/30 dark:bg-purple-600/10 rounded-full blur-[120px] pointer-events-none -z-10 select-none transition-colors duration-300" />
 
       <HeroParticles />
-    
 
    
-     <div className="relative overflow-hidden" onMouseMove={handleMouseMove}></div>
-    <div className="text-center lg:text-left"></div>
-  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-20">          <div
+     <div className="relative overflow-hidden" onMouseMove={handleMouseMove}>
+<div className="text-center lg:text-left"></div>
+<div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-20">          <div
    
-          ref={badgeRef}
-            className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/80 dark:bg-slate-800/60 border border-blue-400/30 dark:border-blue-500/30 backdrop-blur-md mb-8 shadow-sm cursor-pointer transition-all duration-300"></div>
+   ref={badgeRef}
+            className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/80 dark:bg-slate-800/60 border border-blue-400/30 dark:border-blue-500/30 backdrop-blur-md mb-8 shadow-sm cursor-pointer transition-all duration-300"
       <div className="relative overflow-hidden w-full box-border" onMouseMove={handleMouseMove}>
         <motion.div variants={itemVariants} className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-16 sm:pt-20 sm:pb-20 text-center w-full box-border">
           <div
@@ -309,13 +331,6 @@ const HeroSectionComponent = () => {
             </span>
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase">StorySparkAI v2.0 is live</span>
           </div>
-          
-        </motion.div>
-        
-      </div>
-      
-    </div>
-    
 <div className="grid lg:grid-cols-2 gap-12 items-center">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 
@@ -332,11 +347,10 @@ const HeroSectionComponent = () => {
             </span>
           </motion.h1>
           </h1>
-</div>
 <div className="flex justify-center lg:justify-end">
   <AnimatedBook />
 </div>
-          <p className="max-w-2xl lg:mx-0 mx-auto text-lg sm:text-xl text-slate-600 dark:text-slate-400 leading-relaxed mb-10 transition-colors duration-300"></p>
+          <p className="max-w-2xl lg:mx-0 mx-auto text-lg sm:text-xl text-slate-600 dark:text-slate-400 leading-relaxed mb-10 transition-colors duration-300">
 
           <p className="max-w-2xl mx-auto text-sm sm:text-lg lg:text-xl text-slate-600 dark:text-slate-400 leading-relaxed mb-8 sm:mb-10 font-medium">
             Create, edit, and generate engaging multiple story variations from a single prompt.
@@ -349,7 +363,7 @@ const HeroSectionComponent = () => {
                 
                 <Link to="/stories">
                   <button className="relative px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/25 dark:shadow-indigo-500/15 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 flex items-center justify-center gap-2.5 cursor-pointer">
-                    <i className="fa fa-wand-magic-sparkles"></i></button></Link></div>
+                    <i className="fa fa-wand-magic-sparkles"></i>
           <div className="w-full box-border flex flex-col items-center justify-center">
             <div className="relative max-w-3xl w-full box-border">
               <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 select-none">
@@ -390,8 +404,7 @@ const HeroSectionComponent = () => {
               </div>
             </div>
           </div>
-        </div>
-      
+        </motion.div>
 
 </div>
         <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
@@ -406,7 +419,6 @@ const HeroSectionComponent = () => {
             ))}
           </div>
         </div>
-        </div>
 
             <motion.div
         variants={itemVariants}
@@ -417,10 +429,8 @@ const HeroSectionComponent = () => {
             <FeatureCard feature={feature} key={index} />
           ))}
         </div>
-        
       </motion.div>
     </motion.div>
-    
   );
 };
 

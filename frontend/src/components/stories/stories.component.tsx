@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { getShortenedText, ITopicData, topicsData, getWordCount, SELECTED_TOPIC_CLASSES } from "./stories.utils";
 import { formatReadingStats } from "../../utils/story-utils";
 import toast, { Toaster } from "react-hot-toast";
@@ -10,6 +10,7 @@ import BookmarkButton from "../BookmarkButton";
 import logo from "../../assets/logoNew.png";
 import StoryGeneratingAnimation from "../loading/story-generating-animation.component";
 import { useDebounce } from "../../hooks/useDebounce";
+import ConfirmDialog from "./ConfirmDialog";
 
 const soundtrackMap: Record<string, string> = {
   "🧙 Fantasy": "/audio/fantasy.mp3",
@@ -523,6 +524,7 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   // Custom characters cast setup states:
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [characters, setCharacters] = useState<ICharacter[]>([]);
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState<boolean>(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
@@ -863,6 +865,26 @@ const [, setShowRemix] = useState<boolean>(false);
   const { data } = useGetProfileInfoQuery(undefined);
   const userRole = getUserInfo();
   const login = isLoggedIn();
+
+  const handleGenerateClick = useCallback(() => {
+    if (loading || isOverLimit || !textareaValue.trim()) return;
+    if (stories && stories.length > 0) {
+      setShowOverwriteConfirm(true);
+      return;
+    }
+    const form = inputRef.current?.closest("form");
+    if (form) form.requestSubmit();
+  }, [loading, isOverLimit, textareaValue, stories]);
+
+  const handleConfirmOverwrite = useCallback(() => {
+    setShowOverwriteConfirm(false);
+    const form = inputRef.current?.closest("form");
+    if (form) form.requestSubmit();
+  }, []);
+
+  const handleCancelOverwrite = useCallback(() => {
+    setShowOverwriteConfirm(false);
+  }, []);
 
   const onSubmit: SubmitHandler<Inputs> = useCallback(async (data) => {
     if (isGenerationInProgressRef.current) {
@@ -1772,9 +1794,7 @@ onKeyDown={(e) => {
                           // Prevent duplicate requests while generation is already in progress
                           if (isGenerationInProgressRef.current) return;
 
-                          // Reuse the same generation flow as clicking the Generate button
-                          const form = e.currentTarget.closest("form");
-                          form?.requestSubmit();
+                          handleGenerateClick();
                         }
                       }}
                     />
@@ -2197,8 +2217,7 @@ onKeyDown={(e) => {
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            const form = e.currentTarget.closest("form");
-            if (form) form.requestSubmit();
+            handleGenerateClick();
           }
         }}
         />
@@ -2266,6 +2285,8 @@ onKeyDown={(e) => {
         disabled={loading || isOverLimit}
         className={`w-full sm:w-auto justify-center rounded-lg bg-gradient-to-r from-blue-400 to-indigo-500 text-gray-200 px-6 py-3 font-semibold ${
         aria-busy={loading}
+        aria-disabled={loading || isOverLimit}
+        onClick={handleGenerateClick}
         aria-disabled={isGenerateDisabled}
         className={`rounded-lg bg-gradient-to-r from-blue-400 to-indigo-500 text-gray-200 px-6 py-3 font-semibold ${
           isGenerateDisabled
@@ -2290,10 +2311,11 @@ onKeyDown={(e) => {
 
               <div className="flex justify-end pt-2 w-full box-border">
                 <button
-                  type="submit"
+                  type="button"
                   disabled={loading || isOverLimit}
                   aria-busy={loading}
                   aria-disabled={loading || isOverLimit}
+                  onClick={handleGenerateClick}
                   className={`w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold py-3 px-6 rounded-xl shadow-md shadow-blue-500/10 transition-all duration-150 active:scale-[0.98] select-none uppercase tracking-wider flex items-center justify-center gap-2 ${
                     loading || isOverLimit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                   } group`}
@@ -2386,6 +2408,16 @@ onKeyDown={(e) => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showOverwriteConfirm}
+        onConfirm={handleConfirmOverwrite}
+        onCancel={handleCancelOverwrite}
+        title="Overwrite existing stories?"
+        message="You already have stories in your workspace. Generating a new story will replace them. Do you want to continue?"
+        confirmLabel="Generate"
+        cancelLabel="Cancel"
+      />
 
       {loading && <StoryGeneratingAnimation onCancel={handleCancelGeneration} isHighLatency={isHighLatency} />}
 
