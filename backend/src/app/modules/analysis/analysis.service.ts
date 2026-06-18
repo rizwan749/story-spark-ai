@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_TYPE } from "../../../enums/subscription_type";
+﻿import { SUBSCRIPTION_TYPE } from "../../../enums/subscription_type";
 import { ENUM_USER_ROLE } from "../../../enums/user";
 import { USER_STATUS } from "../../../enums/user_status";
 import { Post } from "../post/post.model";
@@ -159,7 +159,6 @@ const getDashboardAnalysis = async (userId: string, role: string) => {
     }
   };
 };
-
 
 const analyzeStory = async (content: string) => {
   const suggestions: Array<{

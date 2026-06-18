@@ -1,4 +1,4 @@
-import { Helmet } from "react-helmet-async";
+import { useEffect } from "react";
 
 interface Props {
   title?: string;
@@ -9,20 +9,52 @@ interface Props {
 
 export const StoryMetaTags = ({ title, content, imageURL, postId }: Props) => {
   const description = (content || "").slice(0, 150);
-  const url = `${window.location.origin}/post/${postId}`;
+  const siteTitle = title || "Story Spark AI";
+  const image = imageURL || `${window.location.origin}/og-image.jpg`;
+  const url = postId
+    ? `${window.location.origin}/post/${postId}`
+    : window.location.href;
 
-  return (
-    <Helmet>
-      <title>{title || "Story Spark AI"}</title>
-      <meta property="og:title" content={title || "Story Spark AI"} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={imageURL || ""} />
-      <meta property="og:url" content={url} />
-      <meta property="og:type" content="article" />
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title || "Story Spark AI"} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={imageURL || ""} />
-    </Helmet>
-  );
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = siteTitle;
+
+    const upsertMeta = (
+      selector: string,
+      attrs: Record<string, string>,
+      contentValue: string
+    ) => {
+      let tag = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!tag) {
+        tag = document.createElement("meta");
+        Object.entries(attrs).forEach(([key, value]) => tag?.setAttribute(key, value));
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", contentValue);
+    };
+
+    upsertMeta('meta[property="og:title"]', { property: "og:title" }, siteTitle);
+    upsertMeta(
+      'meta[property="og:description"]',
+      { property: "og:description" },
+      description
+    );
+    upsertMeta('meta[property="og:image"]', { property: "og:image" }, image);
+    upsertMeta('meta[property="og:url"]', { property: "og:url" }, url);
+    upsertMeta('meta[property="og:type"]', { property: "og:type" }, "article");
+    upsertMeta("meta[name=\"twitter:card\"]", { name: "twitter:card" }, "summary_large_image");
+    upsertMeta("meta[name=\"twitter:title\"]", { name: "twitter:title" }, siteTitle);
+    upsertMeta(
+      "meta[name=\"twitter:description\"]",
+      { name: "twitter:description" },
+      description
+    );
+    upsertMeta("meta[name=\"twitter:image\"]", { name: "twitter:image" }, image);
+
+    return () => {
+      document.title = previousTitle;
+    };
+  }, [description, image, siteTitle, url]);
+
+  return null;
 };

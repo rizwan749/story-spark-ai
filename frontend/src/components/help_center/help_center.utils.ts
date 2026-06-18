@@ -130,15 +130,15 @@ export type SupportLink = Support_Links;
 export interface HelpSection {
   id: string;
   label: string;
-  icon: string;
+  icon?: string;
 }
 
 export const HELP_SECTIONS: HelpSection[] = [
-  { id: "help-categories", label: "Categories", icon: "fa-list" },
-  { id: "troubleshoot-section", label: "Troubleshooting", icon: "fa-screwdriver-wrench" },
-  { id: "faq-section", label: "FAQ", icon: "fa-circle-question" },
-  { id: "developer-setup", label: "Setup Guide", icon: "fa-book" },
-  { id: "support-links-section", label: "Support", icon: "fa-life-ring" },
+  { id: "help-categories", label: "Categories" },
+  { id: "troubleshoot-section", label: "Troubleshooting" },
+  { id: "faq-section", label: "FAQ" },
+  { id: "developer-setup", label: "Setup Guide" },
+  { id: "support-links-section", label: "Support" },
 ];
 
 export const scrollToSection = (id: string) => {
