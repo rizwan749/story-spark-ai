@@ -39,6 +39,7 @@ const PostCommentComponent: React.FC<IPostCommentComponentProps> = ({
   const { data: commentList } = useGetCommentsListQuery(postId);
   const [createComment] = useCreateCommentMutation();
   const [toggleCommentLike] = useToggleCommentLikeMutation();
+  const [toggleCommentHelpful] = useToggleCommentHelpfulMutation();
   const [deleteComment] = useDeleteCommentMutation();
   const [reportComment, { isLoading: isReporting }] = useReportCommentMutation();
 
@@ -151,6 +152,25 @@ const PostCommentComponent: React.FC<IPostCommentComponentProps> = ({
       toast.error(getErrorMessage(err));
     }
   };
+
+  const isCommentHelpful = (helpful: string[] | undefined) =>
+    (helpful as unknown[])?.some((u) =>
+      typeof u === "string"
+        ? u === currentUser?.userId
+        : (u as { email?: string })?.email === currentUser?.email
+    ) ?? false;
+
+  const handleHelpful = async (commentId: string) => {
+    if (!isLogin) {
+      toast.error("Please login to react to a comment.");
+      return;
+    }
+    try {
+      await toggleCommentHelpful(commentId).unwrap();
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
+    }
+  };
   const handleDeleteComment = async (commentId: string) => {
   const confirmed = window.confirm(
     "Are you sure you want to delete this comment?"
@@ -213,6 +233,13 @@ const PostCommentComponent: React.FC<IPostCommentComponentProps> = ({
                   >
                     <i className={`${isCommentLiked(comment.likes) ? "fas" : "far"} fa-heart mr-1`}></i>
                     {comment.likes?.length || 0}
+                  </button>
+                  <button
+                    onClick={() => handleHelpful(comment._id)}
+                    className={`hover:text-amber-500 transition-colors flex items-center gap-1 ${isCommentHelpful(comment.helpful) ? "text-amber-500" : ""}`}
+                  >
+                    <i className={`${isCommentHelpful(comment.helpful) ? "fas" : "far"} fa-lightbulb mr-1`}></i>
+                    Helpful ({comment.helpful?.length || 0})
                   </button>
                   <button
                     onClick={() => setReplyingTo(replyingTo === comment._id ? null : comment._id)}
