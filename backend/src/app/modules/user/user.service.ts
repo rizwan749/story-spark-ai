@@ -71,7 +71,6 @@ const updateUser = async (token: ITokenPayload, payload: Partial<IUser>) => {
   }
 
   // Handle email change with verification
-  let emailPending = false;
   if (payload.email && typeof payload.email === "string") {
     const newEmail = payload.email.trim().toLowerCase();
     if (newEmail !== token.email) {

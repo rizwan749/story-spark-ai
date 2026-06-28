@@ -10,6 +10,7 @@ import {
   resetPasswordRateLimiter,
   refreshTokenRateLimiter,
   ipRateLimiter,
+  verifyEmailChangeRateLimiter,
 } from "../../middleware/ip.rate-limiter";
 
 const router = express.Router();
@@ -54,6 +55,7 @@ router.post(
 // Verify email change API route
 router.post(
   "/verify-email-change",
+  verifyEmailChangeRateLimiter,
   validateRequest(UserValidator.verifyEmailChange),
   AuthController.verifyEmailChange
 );

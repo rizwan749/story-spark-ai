@@ -151,4 +151,13 @@ export const refreshTokenRateLimiter = createRateLimiter({
   actionLabel: "token refresh",
 });
 
+/** Email verification: 10 attempts per hour, 1-hour block */
+export const verifyEmailChangeRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  maxRequests: 10,
+  blockTimeMs: 60 * 60 * 1000, // 1 hour
+  keyPrefix: "verify_email_change",
+  actionLabel: "email verification",
+});
+
 export default ipRateLimiter;
