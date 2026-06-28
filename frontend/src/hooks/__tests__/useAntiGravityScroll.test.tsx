@@ -47,7 +47,7 @@ describe("useAntiGravityScroll", () => {
           listeners[event] = listeners[event].filter((h) => h !== handler);
         }
       }),
-      dispatchEvent: (event: string) => {
+      dispatchEvent: (event: string | Event) => {
         const handlers = listeners[event] || [];
         handlers.forEach((h) => h({} as Event));
       },
