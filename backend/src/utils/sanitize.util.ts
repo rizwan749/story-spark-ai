@@ -126,8 +126,8 @@ export const sanitizeRichText = (input: string | undefined | null): string => {
     sanitized = sanitized.replace(regex, '$1="#blocked"');
   }
 
-  // Remove event handlers as inline attributes (catch-all)
-  sanitized = sanitized.replace(/\son\w+\s*=\s*["'][^"']*["']/gi, "");
+  // Remove event handlers as inline attributes (catch-all), including unquoted attributes
+  sanitized = sanitized.replace(/\son\w+\s*=\s*(?:["'][^"']*["']|[^\s>]+)/gi, "");
 
   // Remove expression() and binding() for older IE
   sanitized = sanitized.replace(/expression\s*\(/gi, "( ");
