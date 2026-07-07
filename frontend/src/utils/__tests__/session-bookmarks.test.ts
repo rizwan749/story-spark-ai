@@ -50,13 +50,21 @@ beforeEach(() => {
   });
 });
 
-const makeStory = (uuid: string, title = "Test Story") => ({
+interface Story {
+  uuid: string;
+  title: string;
+  content: string;
+  prompt: string;
+  author: string;
+}
+
+const makeStory = (uuid: string, title = "Test Story"): Story => ({
   uuid,
   title,
   content: "content",
   prompt: "prompt",
   author: "author",
-}) as any;
+});
 
 describe("getSessionBookmarks", () => {
   it("returns an empty array when sessionStorage is empty", () => {
