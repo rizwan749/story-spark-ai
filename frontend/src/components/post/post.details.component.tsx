@@ -11,6 +11,8 @@ import {
 import RelatedStoriesComponent from "./related.stories.view.component";
 import PostCommentComponent from "./post.comment.component";
 import { ComparisonMode } from "../story-comparison";
+import StarRatingDisplay from "../story-rating/StarRatingDisplay";
+import StoryRatingInput from "../story-rating/StoryRatingInput";
 
 import LoadingAnimation from "../loading/loading.component";
 import SSProfile from "../ui-component/ss-profile/ss-profile";
@@ -21,10 +23,12 @@ import ReaderPreferencesPanel from "../reader-preferences/ReaderPreferences";
 import { useReaderPreferences } from "../reader-preferences/useReaderPreferences";
 
 import { formatDateShort } from "../../utils/time-formate";
+import { calculateReadingTime } from "../../utils/reading-time";
 import { formatReadingStats } from "../../utils/story-utils";
-import { getUserInfo } from "../../services/auth.service";
+import { getUserInfo, isLoggedIn } from "../../services/auth.service";
 
 import { useToggleReactionMutation } from "../../redux/apis/reaction.api";
+import SimilarStories from "../recommendations/SimilarStories";
 
 import {
   useToggleFollowMutation,
@@ -39,6 +43,8 @@ import {
 } from "../../redux/apis/storyVersion.api";
 
 import { toast } from "react-hot-toast";
+import StoryTranslator from "../translate/StoryTranslator";
+import { IStories } from "../stories/stories.view.component";
 
 
 
@@ -115,6 +121,7 @@ const PostDetailsComponent = () => {
   const [selectedVersionForBranch, setSelectedVersionForBranch] = useState<string | null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showTranslator, setShowTranslator] = useState(false);
 
   const [updatePost, { isLoading: isUpdating }] = useUpdatePostMutation();
   const readerPreferences = useReaderPreferences();
@@ -469,19 +476,34 @@ const PostDetailsComponent = () => {
               </div>
             ) : (
               <>
-                <h1 className={`text-4xl font-bold text-slate-900 dark:text-gray-300 leading-tight ${post?.language ? "mb-2" : "mb-6"}`}>
+                <h1 className={`text-4xl font-bold text-slate-900 dark:text-gray-300 leading-tight ${post?.language ? "mb-2" : "mb-4"}`}>
                   {post?.title}
                 </h1>
-                {post?.language && (
-                  <div className="flex gap-2 mb-6">
-                    <span className="inline-flex items-center rounded-full bg-blue-950/60 text-blue-300 border border-blue-700/50 py-1 px-3 text-xs font-semibold">
-                      🌐 {post.language}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-slate-800/60 text-slate-400 border border-slate-700/50 py-1 px-3 text-xs font-semibold">
-                      📖 {formatReadingStats(post.content)}
-                    </span>
-                  </div>
-                )}
+<div className="flex items-center gap-4 mb-6 flex-wrap">
+  <StarRatingDisplay
+    rating={post?.averageRating || 0}
+    totalRatings={post?.totalRatings || 0}
+    size="md"
+  />
+
+  {post?.language && (
+    <span className="inline-flex items-center rounded-full bg-blue-950/60 text-blue-300 border border-blue-700/50 py-1 px-3 text-xs font-semibold">
+      🌐 {post.language}
+    </span>
+  )}
+
+  {post?.content && (
+    <>
+      <span className="inline-flex items-center rounded-full bg-slate-700/60 text-slate-300 border border-slate-600/50 py-1 px-3 text-xs font-semibold gap-1 select-none">
+        ⏱️ {calculateReadingTime(post.content)} min read
+      </span>
+
+      <span className="inline-flex items-center rounded-full bg-slate-800/60 text-slate-400 border border-slate-700/50 py-1 px-3 text-xs font-semibold">
+        📖 {formatReadingStats(post.content)}
+      </span>
+    </>
+  )}
+</div>
 
                 <div className="mb-12">
                   <ImageFallback
@@ -538,6 +560,12 @@ const PostDetailsComponent = () => {
   >
     🔗 Share
   </button>
+  <button
+    onClick={() => setShowTranslator(true)}
+    className="px-3 py-2 rounded bg-emerald-700 text-white hover:bg-emerald-600 transition ml-2"
+  >
+    🌍 Translate
+  </button>
 
   {showShareMenu && (
     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-50">
@@ -573,6 +601,10 @@ const PostDetailsComponent = () => {
 </div>
             </div>
 
+            {id && currentUser && !isOwner && (
+              <StoryRatingInput storyId={id} />
+            )}
+
             {id && (
               <div className="mb-12">
                 <PostCommentComponent postId={id} />
@@ -594,6 +626,15 @@ const PostDetailsComponent = () => {
       <p>No related stories found.</p>
     </div>
   )}
+</div>
+<div className="mt-12">
+  <h3 className="text-xl font-semibold mb-4 text-slate-900 dark:text-gray-300">
+    Similar Stories
+  </h3>
+
+  <SimilarStories
+    stories={relatedPost || []}
+  />
 </div>
           </div>
         </div>
@@ -780,6 +821,20 @@ const PostDetailsComponent = () => {
       )}
 
       <div className="absolute top-[-200px] left-[250px] w-[800px] h-[350px] bg-blue-500/20 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+
+      {showTranslator && post && (
+        <StoryTranslator
+          story={{
+            uuid: post._id || "",
+            title: post.title || "",
+            content: post.content || "",
+            tag: post.tag || "",
+            imageURL: post.imageURL || "",
+          } as IStories}
+          isLogin={isLoggedIn()}
+          onClose={() => setShowTranslator(false)}
+        />
+      )}
     </div>
   );
 };

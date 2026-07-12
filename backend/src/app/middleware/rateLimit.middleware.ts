@@ -1,3 +1,4 @@
+import type { Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 
 /**
@@ -6,19 +7,28 @@ import rateLimit from "express-rate-limit";
  */
 export const searchRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30,
+  limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    success: false,
-    message: "Too many search requests. Please wait a moment and try again.",
+  message: "Too many search requests. Please wait a moment and try again.",
+  keyGenerator: (req: Request, _res: Response): string => {
+    const forwarded = (req.headers["x-forwarded-for"] as string) ?? "";
+    return forwarded.split(",")[0]?.trim() || req.ip || "unknown";
   },
-  keyGenerator: (req) => {
-    // Prefer real IP behind proxy (trust proxy is set in app.ts)
-    return (
-      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-      req.ip ||
-      "unknown"
-    );
+});
+
+/**
+ * General API rate limiter compliant with CodeQL js/missing-rate-limiting.
+ * Protects route handlers performing auth or DB access from raw spam.
+ */
+export const apiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many requests from this IP. Please try again after 15 minutes.",
+  keyGenerator: (req: Request, _res: Response): string => {
+    const forwarded = (req.headers["x-forwarded-for"] as string) ?? "";
+    return forwarded.split(",")[0]?.trim() || req.ip || "unknown";
   },
 });
