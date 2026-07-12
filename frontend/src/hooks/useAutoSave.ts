@@ -126,10 +126,13 @@ export function useAutoSave(draftId: string, title: string, content: string) {
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [title, content, save]);
 
+  const saveRef = useRef(save);
+  saveRef.current = save;
+
   useEffect(() => {
-    intervalTimer.current = setInterval(save, AUTOSAVE_INTERVAL_MS);
+    intervalTimer.current = setInterval(() => saveRef.current(), AUTOSAVE_INTERVAL_MS);
     return () => { if (intervalTimer.current) clearInterval(intervalTimer.current); };
-  }, [save]);
+  }, []);
 
   return { saveStatus, lastSaved, isOnline, pendingCount, save };
 }
