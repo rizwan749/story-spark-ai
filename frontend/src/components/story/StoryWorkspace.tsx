@@ -19,6 +19,7 @@ import OutlineQualityAnalyzer from "../outline-quality/OutlineQualityAnalyzer";
 import DialogueEnhancer from "../dialogue/DialogueEnhancer";
 import TimelineConsistencyChecker from "../timeline/TimelineConsistencyChecker";
 import GenreBlendGenerator from "../genre/GenreBlendGenerator";
+import RelationshipGraph from "../relationship/RelationshipGraph";
 
 import {
   getSafeFileName,
@@ -302,6 +303,13 @@ const StoryWorkspace = () => {
 />
 <GenreBlendGenerator
   prompt={
+    currentStory.chapters
+      ?.map((chapter) => chapter.content)
+      .join("\n\n") || ""
+  }
+/>
+<RelationshipGraph
+  story={
     currentStory.chapters
       ?.map((chapter) => chapter.content)
       .join("\n\n") || ""
