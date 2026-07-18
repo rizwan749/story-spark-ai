@@ -26,7 +26,6 @@ import StoryPerspectiveSwitcher from "../perspective/StoryPerspectiveSwitcher";
 import StoryTonePresets from "../tone/StoryTonePresets";
 import StoryAudienceSelector from "../audience/StoryAudienceSelector";
 
-
 import {
   getSafeFileName,
   downloadBlob,
@@ -354,6 +353,7 @@ const StoryWorkspace = () => {
       .join("\n\n") || ""
   }
 />
+
 
   <StoryViewer
     chapters={currentStory.chapters}
