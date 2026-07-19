@@ -21,8 +21,8 @@ router.post("/generate-free-model", apiRateLimiter, validateRequest(AIModelValid
 router.post(
   "/generate-model-stream",
   apiRateLimiter,
-  aiGenerationRateLimiter,
   auth(),
+  storyGenerationRateLimiter,
   validateRequest(AIModelValidator.aiModel),
   enforceQuota("story_generate"),
   AiModelController.aiModelGenerateStream
