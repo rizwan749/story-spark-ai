@@ -1,86 +1,99 @@
-/**
- * send_response.test.ts
- * Unit tests for the send_response utility in backend/src/shared/send_response.ts
- */
 import { Response } from "express";
-import sendResponse, { IApiResponse } from "../send_response";
+import sendResponse from "../send_response";
 
-describe("send_response utility", () => {
+const makeRes = (): Partial<Response> => ({
+  status: jest.fn().mockReturnThis(),
+  json: jest.fn().mockReturnThis(),
+});
+
+describe("send_response", () => {
   it("sends correct JSON structure with all fields", () => {
-    const mockJson = jest.fn();
-    const mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-    const res = { status: mockStatus } as unknown as Response;
+    const res = makeRes();
 
-    const data: IApiResponse<{ id: number }> = {
+    sendResponse(res as Response, {
       success: true,
       statusCode: 200,
-      message: "Success",
-      meta: { page: 1, limit: 10, total: 100 },
-      data: { id: 42 },
-    };
+      message: "Fetched successfully",
+      meta: { page: 1, limit: 10, total: 1 },
+      data: { id: "1", name: "Riko" },
+    });
 
-    sendResponse(res, data);
-
-    expect(mockStatus).toHaveBeenCalledWith(200);
-    expect(mockJson).toHaveBeenCalledWith({
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
       success: true,
       statusCode: 200,
-      message: "Success",
-      meta: { page: 1, limit: 10, total: 100 },
-      data: { id: 42 },
+      message: "Fetched successfully",
+      meta: { page: 1, limit: 10, total: 1 },
+      data: { id: "1", name: "Riko" },
     });
   });
 
   it("preserves the correct HTTP status code", () => {
-    const mockJson = jest.fn();
-    const mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-    const res = { status: mockStatus } as unknown as Response;
+    const res = makeRes();
 
-    sendResponse(res, { success: false, statusCode: 404, data: null } as any);
+    sendResponse(res as Response, {
+      success: false,
+      statusCode: 404,
+      message: "Not found",
+      data: null,
+    });
 
-    expect(mockStatus).toHaveBeenCalledWith(404);
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.status).toHaveBeenCalledTimes(1);
+    expect((res.json as jest.Mock).mock.calls[0][0]).toMatchObject({
+      statusCode: 404,
+    });
   });
 
   it("handles response with meta fields (page, limit, total)", () => {
-    const mockJson = jest.fn();
-    const mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-    const res = { status: mockStatus } as unknown as Response;
+    const res = makeRes();
 
-    sendResponse(res, {
+    sendResponse(res as Response, {
       success: true,
       statusCode: 200,
-      meta: { page: 2, limit: 20, total: 50 },
-      data: [],
-    } as any);
+      message: "List fetched",
+      meta: { page: 2, limit: 20, total: 57 },
+      data: [{ id: "1" }, { id: "2" }],
+    });
 
-    expect(mockJson).toHaveBeenCalledWith(
+    expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        meta: { page: 2, limit: 20, total: 50 },
+        meta: { page: 2, limit: 20, total: 57 },
       })
     );
   });
 
   it("handles response with null data", () => {
-    const mockJson = jest.fn();
-    const mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-    const res = { status: mockStatus } as unknown as Response;
+    const res = makeRes();
 
-    sendResponse(res, { success: false, statusCode: 404, data: null } as any);
+    sendResponse(res as Response, {
+      success: true,
+      statusCode: 204,
+      message: "No content",
+      data: null,
+    });
 
-    expect(mockJson).toHaveBeenCalledWith(
-      expect.objectContaining({ data: null })
+    expect(res.status).toHaveBeenCalledWith(204);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: null,
+      })
     );
   });
 
   it("uses null for message when not provided", () => {
-    const mockJson = jest.fn();
-    const mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-    const res = { status: mockStatus } as unknown as Response;
+    const res = makeRes();
 
-    sendResponse(res, { success: true, statusCode: 200, data: {} } as any);
+    sendResponse(res as Response, {
+      success: true,
+      statusCode: 200,
+      data: { id: "1" },
+    });
 
-    expect(mockJson).toHaveBeenCalledWith(
-      expect.objectContaining({ message: null })
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: null,
+      })
     );
   });
 });
