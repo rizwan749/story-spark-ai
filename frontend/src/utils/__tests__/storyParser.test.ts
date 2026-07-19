@@ -1,209 +1,119 @@
-
+import { describe, it, expect } from "vitest";
 import { parseStory } from "../storyParser";
 
-describe("storyParser utility (parseStory)", () => {
-  it("should return empty nodes and links for empty or null content", () => {
-    const resultEmpty = parseStory("");
-    expect(resultEmpty.nodes).toEqual([]);
-    expect(resultEmpty.links).toEqual([]);
-
-    const resultNull = parseStory(null as any);
-    expect(resultNull.nodes).toEqual([]);
-    expect(resultNull.links).toEqual([]);
-  });
-
-  it("should return empty lists when no locations or characters are matched", () => {
-    const result = parseStory("this is a simple test text with no locations and no capitalized words.");
+describe("parseStory", () => {
+  // 1. Test empty string input (should return empty nodes and links)
+  it("should return empty nodes and links for empty input", () => {
+    const result = parseStory("");
     expect(result.nodes).toEqual([]);
     expect(result.links).toEqual([]);
   });
 
-  it("should correctly identify locations and count occurrences", () => {
-    // forest is in LOCATION_WORDS
-    const content = "The deep dark forest is mysterious. I love walking in the forest.";
-    const result = parseStory(content);
+  // 2. Test known locations (should extract locations from story text)
+  it("should detect known locations (castle, forest, city)", () => {
+    const story = "The knight rode from the castle, through the deep forest, and into the busy city.";
+    const result = parseStory(story);
 
-    // Verify location node
-    const forestNode = result.nodes.find((n) => n.id === "loc_forest");
-    expect(forestNode).toBeDefined();
-    expect(forestNode?.name).toBe("Forest");
-    expect(forestNode?.type).toBe("location");
-    expect(forestNode?.occurrenceCount).toBe(2);
-    expect(forestNode?.excerpt).toContain("forest");
+    // Verify location nodes exist
+    const locationNames = result.nodes
+      .filter(node => node.type === "location")
+      .map(node => node.name);
+
+    expect(locationNames).toContain("Castle");
+    expect(locationNames).toContain("Forest");
+    expect(locationNames).toContain("City");
+
+    // Verify occurrence count and IDs are correct
+    const castleNode = result.nodes.find(node => node.id === "loc_castle");
+    expect(castleNode).toBeDefined();
+    expect(castleNode?.occurrenceCount).toBe(1);
+    expect(castleNode?.excerpt).toContain("castle");
   });
 
-  it("should identify characters and skip common transition/grammar words", () => {
-    // Alice and Bob are capitalized, should count as characters if repeated or not at start of sentence
-    // "He", "She" should be skipped because they are in SKIP_WORDS
-    const content = "Alice walked down the street. Alice looked back. Bob called out. Bob waved.";
-    const result = parseStory(content);
+  // 3. Test character detection (with names appearing multiple times)
+  it("should detect characters who appear multiple times (Alice, Bob)", () => {
+    const story = "Alice went to the park. Bob saw Alice. Bob waved at Alice and Bob smiled.";
+    const result = parseStory(story);
 
-    const aliceNode = result.nodes.find((n) => n.id === "char_Alice");
-    const bobNode = result.nodes.find((n) => n.id === "char_Bob");
-    const heNode = result.nodes.find((n) => n.id === "char_He");
+    const characters = result.nodes.filter(node => node.type === "character");
+    const characterNames = characters.map(node => node.name);
 
+    expect(characterNames).toContain("Alice");
+    expect(characterNames).toContain("Bob");
+
+    // Verify excerpt content
+    const aliceNode = result.nodes.find(node => node.id === "char_Alice");
     expect(aliceNode).toBeDefined();
-    expect(aliceNode?.type).toBe("character");
-    expect(bobNode).toBeDefined();
-    expect(heNode).toBeUndefined(); // He is in SKIP_WORDS
+    expect(aliceNode?.excerpt).toContain("Alice");
   });
 
-  it("should connect characters to nearby locations within 200 characters distance", () => {
-    const content = "Alice entered the dark forest. Alice was scared inside.";
-    const result = parseStory(content);
+  // 4. Test skip words (pronouns, common capitalized words should not be characters)
+  it("should not count skip words as characters", () => {
+    const story = "He went to the house. She went too. They saw it. The adventure started. Once upon a time.";
+    const result = parseStory(story);
 
-    const forestNode = result.nodes.find((n) => n.id === "loc_forest");
-    const aliceNode = result.nodes.find((n) => n.id === "char_Alice");
+    const characterNames = result.nodes
+      .filter(node => node.type === "character")
+      .map(node => node.name);
 
-    expect(forestNode).toBeDefined();
-    expect(aliceNode).toBeDefined();
+    expect(characterNames).not.toContain("He");
+    expect(characterNames).not.toContain("She");
+    expect(characterNames).not.toContain("They");
+    expect(characterNames).not.toContain("The");
+    expect(characterNames).not.toContain("Once");
+  });
 
-    // Verify link exists between Alice and forest
-    const link = result.links.find(
-      (l) => l.source === "char_Alice" && l.target === "loc_forest"
+  // 5. Test character occurrence filter (>= 2 validation vs sentence start)
+  it("should filter out single-occurrence capitalized words that start sentences, but keep others", () => {
+    // "Charlie" starts a sentence and only appears once -> should be filtered out
+    // "Dave" appears once but does NOT start a sentence -> should be kept
+    // "Edward" appears twice -> should be kept
+    const story = "Charlie is very happy. The loyal servant Dave went to fetch water. Edward went out. Edward came back.";
+    const result = parseStory(story);
+
+    const characterNames = result.nodes
+      .filter(node => node.type === "character")
+      .map(node => node.name);
+
+    expect(characterNames).not.toContain("Charlie");
+    expect(characterNames).toContain("Dave");
+    expect(characterNames).toContain("Edward");
+  });
+
+  // 6. Test character-to-location proximity linking
+  it("should link characters to nearby locations within 200 characters", () => {
+    // In this story, Alice is very close to castle (within 200 chars).
+    // Bob is far away from castle (separated by a very long padding of words).
+    const padding = "x ".repeat(150); // 300 characters padding
+    const story = `Alice went to the castle. ${padding} Bob also exists.`;
+    
+    // We need both Alice and Bob to appear at least twice so they are detected as characters
+    const fullStory = `${story} Alice saw Bob. Alice spoke to Bob.`;
+    const result = parseStory(fullStory);
+
+    // Verify we have a link from Alice to castle
+    const aliceToCastleLink = result.links.find(
+      link => link.source === "char_Alice" && link.target === "loc_castle"
     );
-    expect(link).toBeDefined();
-  });
+    expect(aliceToCastleLink).toBeDefined();
 
-  it("should connect consecutive locations in the story graph", () => {
-    const content = "We traveled from the green forest into a dark cave.";
-    const result = parseStory(content);
-
-    const forestNode = result.nodes.find((n) => n.id === "loc_forest");
-    const caveNode = result.nodes.find((n) => n.id === "loc_cave");
-
-    expect(forestNode).toBeDefined();
-    expect(caveNode).toBeDefined();
-
-    // Verify consecutive location link
-    const link = result.links.find(
-      (l) => l.source === "loc_forest" && l.target === "loc_cave"
+    // Verify we do NOT have a link from Bob to castle
+    const bobToCastleLink = result.links.find(
+      link => link.source === "char_Bob" && link.target === "loc_castle"
     );
-    expect(link).toBeDefined();
-
-/**
- * @vitest-environment jsdom
- */
-import { describe, it, expect } from "vitest";
-import { parseStory, IStoryNode } from "../storyParser";
-
-describe("parseStory", () => {
-  it("returns empty nodes and links for an empty string", () => {
-    const result = parseStory("");
-    expect(result.nodes).toHaveLength(0);
-    expect(result.links).toHaveLength(0);
+    expect(bobToCastleLink).toBeUndefined();
   });
 
-  it("returns empty nodes and links when no locations or characters are found", () => {
-    const result = parseStory("It was a dark night.");
-    expect(Array.isArray(result.nodes)).toBe(true);
-    expect(Array.isArray(result.links)).toBe(true);
-  });
+  // 7. Test consecutive location linking
+  it("should link consecutive locations in order of discovery", () => {
+    // Story contains forest and castle.
+    // Since forest and castle are found, they should be linked sequentially.
+    const story = "The path led through the forest to the castle.";
+    const result = parseStory(story);
 
-  it("returns an object with nodes and links properties", () => {
-    const result = parseStory("The hero went to the castle.");
-    expect(result).toHaveProperty("nodes");
-    expect(result).toHaveProperty("links");
-    expect(Array.isArray(result.nodes)).toBe(true);
-    expect(Array.isArray(result.links)).toBe(true);
-  });
-
-  it("identifies a known location keyword as a location node", () => {
-    const result = parseStory(
-      "The knight entered the castle through the heavy gate."
+    const consecutiveLink = result.links.find(
+      link => link.source === "loc_forest" && link.target === "loc_castle"
     );
-    const locationNodes = result.nodes.filter((n: IStoryNode) => n.type === "location");
-    expect(locationNodes.some((n: IStoryNode) => n.name === "Castle")).toBe(true);
-  });
-
-  it("sets node id with loc_ prefix for locations", () => {
-    const result = parseStory("They walked through the forest at dawn.");
-    const forestNode = result.nodes.find(
-      (n: IStoryNode) => n.name === "Forest"
-    );
-    expect(forestNode?.id).toBe("loc_forest");
-  });
-
-  it("tracks occurrenceCount for locations that appear multiple times", () => {
-    const result = parseStory(
-      "The forest was dark. In the forest, they heard a noise. The forest echoed."
-    );
-    const forestNode = result.nodes.find(
-      (n: IStoryNode) => n.name === "Forest"
-    );
-    expect(forestNode?.occurrenceCount).toBeGreaterThanOrEqual(1);
-  });
-
-  it("location nodes have an excerpt string", () => {
-    const result = parseStory("The story begins in the village square.");
-    const locationNodes = result.nodes.filter((n: IStoryNode) => n.type === "location");
-    expect(locationNodes.length).toBeGreaterThan(0);
-    locationNodes.forEach((n: IStoryNode) => {
-      expect(typeof n.excerpt).toBe("string");
-      expect(n.excerpt.length).toBeGreaterThan(0);
-    });
-  });
-
-  it("does not duplicate location nodes for the same keyword", () => {
-    const result = parseStory(
-      "In the forest they met. Then they left the forest."
-    );
-    const forestNodes = result.nodes.filter(
-      (n: IStoryNode) => n.id === "loc_forest"
-    );
-    expect(forestNodes).toHaveLength(1);
-  });
-
-  it("node names are capitalized", () => {
-    const result = parseStory("The village was quiet.");
-    const villageNode = result.nodes.find(
-      (n: IStoryNode) => n.id === "loc_village"
-    );
-    expect(villageNode?.name).toBe("Village");
-  });
-
-  it("returns links as an array", () => {
-    const result = parseStory("In the castle, a hero emerged.");
-    expect(Array.isArray(result.links)).toBe(true);
-  });
-
-  it("each node has id, name, type, and excerpt fields", () => {
-    const result = parseStory("The hero stood at the gate.");
-    const nodes = result.nodes;
-    nodes.forEach((n: IStoryNode) => {
-      expect(n).toHaveProperty("id");
-      expect(n).toHaveProperty("name");
-      expect(n).toHaveProperty("type");
-      expect(n).toHaveProperty("excerpt");
-      expect(["location", "character"]).toContain(n.type);
-    });
-  });
-
-  it("each link has source and target fields", () => {
-    const result = parseStory("The knight lived in the castle near the village.");
-    const links = result.links;
-    links.forEach((l: { source: string; target: string }) => {
-      expect(l).toHaveProperty("source");
-      expect(l).toHaveProperty("target");
-      expect(typeof l.source).toBe("string");
-      expect(typeof l.target).toBe("string");
-    });
-  });
-
-  it("handles a long story without crashing", () => {
-    const longStory = `
-      The kingdom of Eldoria was vast and ancient. In the capital city,
-      a young mage named Arin studied at the grand library. The library
-      held secrets from centuries past. Beyond the city walls lay the
-      forest of Whispering Pines, where few dared to venture. Yet
-      Arin knew the answer lay within that dark woods. The tower of
-      the sorcerer stood at the edge of the lake, its reflection
-      shimmering on calm waters at dawn.
-    `.repeat(5);
-
-    expect(() => parseStory(longStory)).not.toThrow();
-    const result = parseStory(longStory);
-    expect(result.nodes.length).toBeGreaterThan(0);
-
+    expect(consecutiveLink).toBeDefined();
   });
 });
