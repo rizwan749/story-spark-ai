@@ -61,6 +61,9 @@ export default {
     expires_in: requiredEnv("JWT_EXPIRES_IN"),
     refresh_expires_in: requiredEnv("JWT_REFRESH_EXPIRES_IN"),
   },
+  auth: {
+    allow_cookie_auth: process.env.ALLOW_COOKIE_AUTH === "true",
+  },
   default_admin_password: process.env.DEFAULT_ADMIN_PASSWORD,
   openai_key: process.env.OPEN_AI_KEY,
   image_generation_provider: process.env.IMAGE_GENERATION_PROVIDER,
