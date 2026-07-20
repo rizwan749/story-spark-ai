@@ -31,6 +31,7 @@ import StoryRevisionChecklist from "../revision/StoryRevisionChecklist";
 import StoryAudienceSelector from "../audience/StoryAudienceSelector";
 import StoryKeywordExtractor from "../keywords/StoryKeywordExtractor";
 import StoryFactSheet from "../fact-sheet/StoryFactSheet";
+import CharacterConsistencyChecker from "../character-consistency/CharacterConsistencyChecker";
 import StorySceneNavigator from "../scene-navigator/StorySceneNavigator";
 import StoryComplexityAnalyzer from "../complexity/StoryComplexityAnalyzer";
 import StorySessionRecovery from "../recovery/StorySessionRecovery";
@@ -445,6 +446,14 @@ const StoryWorkspace = () => {
 />
 
 <StoryTimelineVisualization
+  story={
+    currentStory.chapters
+      ?.map((chapter) => chapter.content)
+      .join("\n\n") || ""
+  }
+/>
+
+<CharacterConsistencyChecker
   story={
     currentStory.chapters
       ?.map((chapter) => chapter.content)
