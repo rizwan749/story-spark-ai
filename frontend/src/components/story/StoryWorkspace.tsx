@@ -39,6 +39,7 @@ import StoryComparisonDashboard from "../comparison/StoryComparisonDashboard";
 import StoryTimelineVisualization from "../timeline/StoryTimelineVisualization";
 import StoryRelationshipGraph from "../relationship-graph/StoryRelationshipGraph";
 import StoryPlotTwistGenerator from "../plot-twist/StoryPlotTwistGenerator";
+import StoryReadingAnalytics from "../analytics/StoryReadingAnalytics";
 
 
 import {
@@ -482,6 +483,13 @@ const StoryWorkspace = () => {
   }}
 />
 
+<StoryReadingAnalytics
+  story={
+    currentStory.chapters
+      ?.map((chapter) => chapter.content)
+      .join("\n\n") || ""
+  }
+/>
   <StoryViewer
     chapters={currentStory.chapters}
     storyId={currentStory.id}
