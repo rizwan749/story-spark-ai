@@ -31,6 +31,8 @@ import StoryRevisionChecklist from "../revision/StoryRevisionChecklist";
 import StoryAudienceSelector from "../audience/StoryAudienceSelector";
 import StoryKeywordExtractor from "../keywords/StoryKeywordExtractor";
 import StoryFactSheet from "../fact-sheet/StoryFactSheet";
+import StorySceneNavigator from "../scene-navigator/StorySceneNavigator";
+
 
 
 import {
@@ -393,6 +395,14 @@ const StoryWorkspace = () => {
 />
 
 <StoryFactSheet
+  story={
+    currentStory.chapters
+      ?.map((chapter) => chapter.content)
+      .join("\n\n") || ""
+  }
+/>
+
+<StorySceneNavigator
   story={
     currentStory.chapters
       ?.map((chapter) => chapter.content)
