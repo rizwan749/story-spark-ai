@@ -27,17 +27,17 @@ export const validateTokenPayload = (decodedData: Record<string, unknown>): void
   if (!validSubscriptions.includes(decodedData.subscriptionType)) {
     throw new Error(`Token 'subscriptionType' claim must be one of: ${validSubscriptions.join(", ")}`);
   }
-  if (typeof decodedData.exp !== "number" || isNaN(decodedData.exp)) {
+  if (typeof decodedData.exp !== "number" || isNaN(decodedData.exp) || decodedData.exp <= 0) {
     throw new Error("Token is missing a valid numeric 'exp' claim.");
   }
   const currentTime = Math.floor(Date.now() / 1000);
-  if (decodedData.exp >= 0 && decodedData.exp < currentTime) {
+  if (decodedData.exp < currentTime) {
     throw new Error("Token has expired.");
   }
-  if (typeof decodedData.iat !== "number" || isNaN(decodedData.iat)) {
+  if (typeof decodedData.iat !== "number" || isNaN(decodedData.iat) || decodedData.iat <= 0) {
     throw new Error("Token is missing a valid numeric 'iat' claim.");
   }
-  if (decodedData.exp >= 0 && decodedData.iat >= decodedData.exp) {
+  if (decodedData.iat >= decodedData.exp) {
     throw new Error("Token 'iat' must be before 'exp'.");
   }
   if (decodedData.name !== undefined && typeof decodedData.name !== "string") {
