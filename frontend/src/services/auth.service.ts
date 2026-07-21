@@ -63,11 +63,8 @@ export const getValidDecodedToken = () => {
   if (authToken) {
     try {
       const decodedData = decodedToken(authToken);
-
-      if (!decodedData) {
-        removeFromLocalStorage(AUTH_KEY);
-        return null;
-      }
+      // decodedToken always throws on failure — it never returns null.
+      // If it throws, the catch block below handles cleanup and logging.
 
       validateTokenPayload(decodedData as Record<string, unknown>);
 
